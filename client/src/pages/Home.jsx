@@ -10,7 +10,7 @@ const Home = () => {
   return (
     <div>
       <Banner />
-      <TabCategories jobs={jobs} />
+      <TabCategories />
     </div>
   );
 };

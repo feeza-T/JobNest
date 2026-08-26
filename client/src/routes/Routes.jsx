@@ -3,17 +3,23 @@ import Main from "../layouts/Main";
 import Home from "../pages/Home";
 import Login from "../pages/Authentication/Login";
 import Register from "../pages/Authentication/Register";
+import JobCard from "../components/JobCard";
+import JobDetails from "../pages/JobDetails";
+import AddJob from "../pages/AddJob";
+import ErrorPage from "../pages/ErrorPage";
+import MyPostedJobs from "../pages/MyPostedJobs";
 
 const router = createBrowserRouter(
     [
        {
          path: '/',
         element: <Main></Main>,
+        errorElement:<ErrorPage></ErrorPage>,
         children: [
            {
              index: true,
             element: <Home></Home>,
-            loader: ()=> fetch(`${import.meta.env.VITE_API_URL}/jobs`)
+            
            },
            {
              path:'/login',
@@ -22,7 +28,21 @@ const router = createBrowserRouter(
            {
             path:'/register',
             element: <Register></Register>
+           },
+           {
+            path:'/jobs/:id',
+            element: <JobDetails></JobDetails>,
+            loader: ({params})=> fetch(`${import.meta.env.VITE_API_URL}/job/${params.id}`),
+           },
+           {
+            path:'/add-job',
+            element: <AddJob></AddJob>
+           },
+            {
+            path:'/my-posted-jobs',
+            element: <MyPostedJobs></MyPostedJobs>
            }
+
 
         ]
        }

@@ -1,7 +1,7 @@
 import express from "express";
 import cors from "cors";
 import dotenv from "dotenv";
-import { MongoClient } from "mongodb";
+import { MongoClient, ObjectId } from "mongodb";
 
 dotenv.config();
 
@@ -30,7 +30,8 @@ const client = new MongoClient(
 
 const db = client.db("jobnest");
 
-const jobsCollection = db.collection("jobs");
+const jobsCollection = client.db('jobnest').collection("jobs");
+const bidsCollection = client.db('jobnest').collection("bids");
 
 
 // Get all jobs
@@ -40,6 +41,55 @@ app.get("/jobs", async (req, res) => {
 
   res.send(result);
 });
+
+//get a single job data(jobdetails page)
+app.get('/job/:id', async(req, res)=>{
+  const id = req.params.id
+  //class er instance use korte hole new likha lage
+  const query = {_id: new ObjectId(id)}
+   const result = await jobsCollection.findOne(query);
+  res.send(result)
+
+})
+
+
+//save a bid data in db
+app.post('/bid' , async (req,res)=>{
+  const bidData = req.body
+  console.log(bidData)
+  const result = await bidsCollection.insertOne(bidData)
+  res.send(result)
+})
+
+//save a job post from add post
+app.post('/job' , async (req,res)=>{
+  const jobData = req.body
+  console.log(jobData)
+  const result = await jobsCollection.insertOne(jobData)
+  res.send(result)
+})
+
+
+//get all jobs posted by me
+app.get('/jobs/:email', async(req, res)=>{
+  const email = req.params.email
+  const query = {'buyer.email' : email }
+  const result = await jobsCollection.find(query).toArray()
+  res.send(result)
+})
+
+//delete a job data from my posted jobs page
+app.delete('/jobs/:id', async(req, res)=>{
+  const id = req.params.id
+  const query = {_id : new ObjectId(id) }
+  const result = await jobsCollection.deleteOne(query)
+  res.send(result)
+})
+
+// ager tay job, etay jobs emne change kre nite hobe naile sob same route e jabe
+// app.get('/jobs/:email', async(req, res)=>{
+  
+// })
 
 
 // MongoDB connection
