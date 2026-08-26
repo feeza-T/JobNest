@@ -86,6 +86,20 @@ app.delete('/jobs/:id', async(req, res)=>{
   res.send(result)
 })
 
+//update job details
+app.put('/job/:id' , async (req,res)=>{
+  const id = req.params.id
+  const jobData = req.body
+  const query = { _id:new ObjectId(id)}
+  const options = {upsert : true} //if the data is not initially write, but want to write in update section ,use upsert= true
+  const updateDoc = {
+    $set: {
+      ...jobData,    //full jobdata updates
+    },
+  }
+  const result = await jobsCollection.updateOne(query,updateDoc,options)
+   res.send(result)
+})
 // ager tay job, etay jobs emne change kre nite hobe naile sob same route e jabe
 // app.get('/jobs/:email', async(req, res)=>{
   

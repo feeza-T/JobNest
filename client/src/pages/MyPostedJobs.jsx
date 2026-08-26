@@ -199,11 +199,23 @@ const MyPostedJobs = () => {
                           </td>
 
                           {/* Category */}
-                          <td className="px-4 py-4 text-sm whitespace-nowrap">
-                            <p className="inline-block rounded-full border border-[#F4A93A]/20 bg-[#F4A93A]/10 px-3 py-1 text-xs text-[#F4A93A]">
-                              {job.category}
-                            </p>
-                          </td>
+<td className="px-4 py-4 text-sm whitespace-nowrap">
+  <p
+    className={`inline-block rounded-full border px-3 py-1 text-xs font-medium
+      ${
+        job.category === "Web Development"
+          ? "border-blue-400/20 bg-blue-400/10 text-blue-300"
+          : job.category === "Graphic Design"
+          ? "border-purple-400/20 bg-purple-400/10 text-purple-300"
+          : job.category === "Digital Marketing"
+          ? "border-emerald-400/20 bg-emerald-400/10 text-emerald-300"
+          : "border-gray-400/20 bg-gray-400/10 text-gray-300"
+      }
+    `}
+  >
+    {job.category}
+  </p>
+</td>
 
                           {/* Description */}
                           <td
@@ -245,7 +257,7 @@ const MyPostedJobs = () => {
 
                               {/* Edit */}
                               <Link
-                                to={`/update-job/${job._id}`}
+                                to={`/update/${job._id}`}
                                 title="Edit Job"
                                 className="text-[#9FB3A6] transition-colors duration-200 hover:text-[#F4A93A]"
                               >
