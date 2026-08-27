@@ -100,6 +100,26 @@ app.put('/job/:id' , async (req,res)=>{
   const result = await jobsCollection.updateOne(query,updateDoc,options)
    res.send(result)
 })
+
+//get all bids for a user by email from db
+app.get('/my-bids/:email', async(req, res)=>{
+  const email = req.params.email
+  const query = {email : email }
+  const result = await bidsCollection.find(query).toArray()
+  res.send(result)
+})
+
+//get all bid requests from db for job owner->buyers email
+app.get('/bid-requests/:email', async(req, res)=>{
+  const email = req.params.email
+  const query = {'buyer.email' : email }
+  const result = await bidsCollection.find(query).toArray()
+  res.send(result)
+})
+
+
+
+
 // ager tay job, etay jobs emne change kre nite hobe naile sob same route e jabe
 // app.get('/jobs/:email', async(req, res)=>{
   

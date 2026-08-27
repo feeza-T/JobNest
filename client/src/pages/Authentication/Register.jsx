@@ -32,7 +32,7 @@ const {
       console.log(result)
       await updateUserProfile(name,photo)
       setUser({...user, photoUR : photo ,displayName: name })
-      navigate('/')
+       navigate(from,{replace : true})
       toast.success('SignUp successfully')
     }
     catch(err){
@@ -47,7 +47,7 @@ const {
   try{
     await signInWithGoogle()
     toast.success('Signin Successful')
-    navigate('/')
+     navigate(from,{replace : true})
   }
   catch(err)
   {

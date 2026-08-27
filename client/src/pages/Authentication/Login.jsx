@@ -1,5 +1,5 @@
-import { useContext } from "react"
-import { Link, useNavigate } from "react-router-dom"
+import { useContext, useEffect } from "react"
+import { Link, useLocation, useNavigate } from "react-router-dom"
 import { AuthContext } from "../../provider/AuthProvider"
 import toast from "react-hot-toast"
 
@@ -14,16 +14,26 @@ const jobTags = [
 
 const Login = () => {
 
+  const location = useLocation()
   const navigate = useNavigate()
 
- const {signIn,signInWithGoogle} = useContext(AuthContext)
+ const {signIn,signInWithGoogle, user, loading } = useContext(AuthContext)
 
+ //id user is already login, then it should redirect to home 
+ useEffect(()=>{
+  if(user){
+    navigate('/')
+  }
+ } , [navigate,user])
+
+
+ const from = location.state || '/'
  //Google signin
  const handleGoogleSignIn =async() =>{
   try{
     await signInWithGoogle()
     toast.success('Signin Successful')
-    navigate('/')
+    navigate(from,{replace : true})
   }
   catch(err)
   {
@@ -45,7 +55,7 @@ const Login = () => {
     //user login
     const result = await signIn(email,pass)
     console.log(result)
-    navigate('/')
+     navigate(from,{replace : true})
     toast.success('SignIn Successful')
   }
   catch (err){
@@ -54,6 +64,8 @@ const Login = () => {
   }
  }
 
+//for some second the login page is showing ,if user is already login still, thatswhy this part,return nothing
+ if(user || loading ) return 
 
   return (
     <div className="relative min-h-[calc(100vh-306px)] overflow-hidden bg-[#080D0B] px-4 py-10 text-[#F5F7F4]">
