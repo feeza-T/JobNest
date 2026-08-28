@@ -30,7 +30,7 @@ const defaultStatusStyle = {
   dot: "bg-[#8FA998]",
 }
 
-const MyBids = () => {
+const BidRequests = () => {
   const { user } = useContext(AuthContext)
 
   const [bids, setBids] = useState([])
@@ -43,18 +43,19 @@ const MyBids = () => {
 
   const getData = async () => {
     const { data } = await axios(
-      `${import.meta.env.VITE_API_URL}/my-bids/${user?.email}`
+      `${import.meta.env.VITE_API_URL}/bid-requests/${user?.email}`
     )
     setBids(data)
   }
 
-  // Mark bid as complete
-  const handleStatus = async (id, status) => {
+  //handle status
+  const handleStatus = async (id, prevStatus, status) => {
     try {
-      await axios.patch(`${import.meta.env.VITE_API_URL}/bid/${id}`, {
-        status,
-      })
-
+      const { data } = await axios.patch(
+        `${import.meta.env.VITE_API_URL}/bid/${id}`,
+        { status }
+      )
+      console.log(data)
       getData()
     } catch (error) {
       console.error(error)
@@ -71,11 +72,11 @@ const MyBids = () => {
 
         <div className="mb-7 flex items-center gap-x-3">
           <h2 className="jn-display text-2xl font-medium text-[#FAF6EF] md:text-3xl">
-            My Bids
+            Bid Requests
           </h2>
 
           <span className="rounded-full border border-[#F4A93A]/30 bg-[#F4A93A]/10 px-3 py-1 text-xs font-semibold uppercase tracking-wider text-[#F4A93A]">
-            {bids.length} Bid{bids.length === 1 ? "" : "s"}
+            {bids.length} Request{bids.length === 1 ? "" : "s"}
           </span>
         </div>
 
@@ -93,6 +94,9 @@ const MyBids = () => {
                 <tr>
                   <th className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider text-[#6B8577]">
                     Title
+                  </th>
+                  <th className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider text-[#6B8577]">
+                    Email
                   </th>
                   <th className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider text-[#6B8577]">
                     Deadline
@@ -117,6 +121,7 @@ const MyBids = () => {
                   const status = statusStyles[bid.status] || defaultStatusStyle
                   const catStyle =
                     categoryStyles[bid.category] || defaultCategoryStyle
+                  const decided = !!bid.status && bid.status !== "Pending"
 
                   return (
                     <tr
@@ -125,6 +130,10 @@ const MyBids = () => {
                     >
                       <td className="whitespace-nowrap px-6 py-4 text-sm font-medium text-[#FAF6EF]">
                         {bid.job_title || "Untitled Job"}
+                      </td>
+
+                      <td className="whitespace-nowrap px-6 py-4 text-sm text-[#9FB3A6]">
+                        {bid.email}
                       </td>
 
                       <td className="whitespace-nowrap px-6 py-4 text-sm text-[#9FB3A6]">
@@ -159,18 +168,41 @@ const MyBids = () => {
                       </td>
 
                       <td className="whitespace-nowrap px-6 py-4 text-sm">
-                        <button
-                          disabled={bid.status !== "In progress"}
-                          onClick={() => handleStatus(bid._id, "Complete")}
-                          title="Mark Complete"
-                          className={`rounded-full border px-3 py-1.5 text-xs font-semibold uppercase tracking-wider transition ${
-                            bid.status !== "In progress"
-                              ? "cursor-not-allowed border-[#8FA998]/10 bg-[#8FA998]/5 text-[#6B8577]"
-                              : "border-emerald-400/30 bg-emerald-400/10 text-emerald-400 hover:bg-emerald-400/20"
-                          }`}
-                        >
-                          Complete
-                        </button>
+                        <div className="flex items-center gap-2">
+
+                          {/* Accept */}
+                          <button
+                            title="Accept Bid"
+                            disabled={decided}
+                            onClick={() =>
+                              handleStatus(bid._id, bid.status, "In progress")
+                            }
+                            className={`rounded-full border px-3 py-1.5 text-xs font-semibold uppercase tracking-wider transition ${
+                              decided
+                                ? "cursor-not-allowed border-[#8FA998]/10 bg-[#8FA998]/5 text-[#6B8577]"
+                                : "border-emerald-400/30 bg-emerald-400/10 text-emerald-400 hover:bg-emerald-400/20"
+                            }`}
+                          >
+                            Accept
+                          </button>
+
+                          {/* Reject */}
+                          <button
+                            title="Reject Bid"
+                            disabled={decided}
+                            onClick={() =>
+                              handleStatus(bid._id, bid.status, "Rejected")
+                            }
+                            className={`rounded-full border px-3 py-1.5 text-xs font-semibold uppercase tracking-wider transition ${
+                              decided
+                                ? "cursor-not-allowed border-[#8FA998]/10 bg-[#8FA998]/5 text-[#6B8577]"
+                                : "border-red-400/30 bg-red-400/10 text-red-400 hover:bg-red-400/20"
+                            }`}
+                          >
+                            Reject
+                          </button>
+
+                        </div>
                       </td>
                     </tr>
                   )
@@ -179,10 +211,10 @@ const MyBids = () => {
                 {bids.length === 0 && (
                   <tr>
                     <td
-                      colSpan={6}
+                      colSpan={7}
                       className="px-6 py-10 text-center text-sm text-[#6B8577]"
                     >
-                      You haven't placed any bids yet.
+                      No bid requests yet.
                     </td>
                   </tr>
                 )}
@@ -195,4 +227,4 @@ const MyBids = () => {
   )
 }
 
-export default MyBids
+export default BidRequests

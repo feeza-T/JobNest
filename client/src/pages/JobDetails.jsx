@@ -1,6 +1,7 @@
+
 import { useContext, useState } from "react"
 import { AuthContext } from "../provider/AuthProvider"
-import { useLoaderData, Link } from "react-router-dom"
+import { useLoaderData, Link, useNavigate } from "react-router-dom"
 import { motion } from "framer-motion"
 import axios from "axios"
 import DatePicker from "react-datepicker"
@@ -10,6 +11,7 @@ import toast from "react-hot-toast"
 const JobDetails = () => {
   const { user } = useContext(AuthContext)
   const job = useLoaderData()
+  const navigate = useNavigate()
 
   const {
     _id,
@@ -19,10 +21,10 @@ const JobDetails = () => {
     description,
     min_price,
     max_price,
-   buyer,
+    buyer,
   } = job || {}
 
-  //datePicker for deadline
+  // DatePicker for deadline
   const [selectedDate, setSelectedDate] = useState(new Date())
 
   const handleChange = (date) => {
@@ -30,18 +32,27 @@ const JobDetails = () => {
   }
 
   const handleFormSubmission = async (e) => {
-    if(user?.mail === buyer_email) return toast.error('Action not Permitted!')
     e.preventDefault()
+
+    // Prevent buyer from bidding on their own job
+    if (user?.email === buyer?.email) {
+      return toast.error("Action Not Permitted!")
+    }
 
     const form = e.target
     const jobId = _id
     const price = parseFloat(form.price.value)
-    if(price<parseFloat(min_price)) return toast.error("Offer more or at least equal to Minimum Price")
+
+    if (price < parseFloat(min_price)) {
+      return toast.error(
+        "Offer more or at least equal to Minimum Price"
+      )
+    }
+
     const email = user?.email
     const comment = form.comment.value
     const bidDeadline = selectedDate
 
-    //const buyer_email = buyer_email
     const status = "Pending"
 
     const bidData = {
@@ -51,24 +62,31 @@ const JobDetails = () => {
       email,
       comment,
       deadline: bidDeadline,
-      buyer_email:buyer?.email,
+      buyer_email: buyer?.email,
       status,
     }
 
     try {
-      const { data } = await axios.post(`${import.meta.env.VITE_API_URL}/bid`,bidData)
+      const { data } = await axios.post(
+        `${import.meta.env.VITE_API_URL}/bid`,
+        bidData
+      )
 
       console.log(data)
+
+      toast.success("Bid Placed Successfully")
+      navigate("/my-bids")
     } catch (err) {
       console.log(err)
+      toast.error("Failed to place bid")
     }
   }
 
   return (
     <main className="min-h-screen bg-[#071C15] px-4 py-10 md:px-8">
-
       {/* Background glow */}
       <div className="pointer-events-none fixed left-0 top-20 h-72 w-72 rounded-full bg-[#F4A93A]/5 blur-3xl" />
+
       <div className="pointer-events-none fixed right-0 bottom-0 h-96 w-96 rounded-full bg-[#8FA998]/5 blur-3xl" />
 
       <div className="relative mx-auto max-w-7xl">
@@ -104,10 +122,11 @@ const JobDetails = () => {
               <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
 
                 <div className="flex items-center gap-2 text-sm text-[#9FB3A6]">
-                  <span>Deadline:{new Data(deadline).toLocalDateString()}</span>
-
-                  <span className="font-medium text-[#D9E4DC]">
-                    {deadline || "Not specified"}
+                  <span>
+                    Deadline:{" "}
+                    {deadline
+                      ? new Date(deadline).toLocaleDateString()
+                      : "Not specified"}
                   </span>
                 </div>
 
@@ -127,6 +146,7 @@ const JobDetails = () => {
 
               {/* Description */}
               <div className="mt-7">
+
                 <h2 className="text-sm font-semibold uppercase tracking-[0.2em] text-[#F4A93A]">
                   About this job
                 </h2>
@@ -135,6 +155,7 @@ const JobDetails = () => {
                   {description ||
                     "No description has been provided for this job."}
                 </p>
+
               </div>
 
               {/* Budget */}
@@ -177,15 +198,15 @@ const JobDetails = () => {
 
                   <div className="flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden rounded-full border border-[#8FA998]/20 bg-[#0F2E22]">
 
-                    {buyer_photo ? (
+                    {buyer?.photo ? (
                       <img
-                        src={buyer_photo}
-                        alt={buyer_name || "Buyer"}
+                        src={buyer.photo}
+                        alt={buyer.name || "Buyer"}
                         className="h-full w-full object-cover"
                       />
                     ) : (
                       <span className="text-xl font-semibold text-[#F4A93A]">
-                        {(buyer_name || buyer_email || "B")
+                        {(buyer?.name || buyer?.email || "B")
                           .charAt(0)
                           .toUpperCase()}
                       </span>
@@ -196,11 +217,11 @@ const JobDetails = () => {
                   <div className="min-w-0">
 
                     <p className="font-medium text-[#FAF6EF]">
-                      {buyer_name || "Job Owner"}
+                      {buyer?.name || "Job Owner"}
                     </p>
 
                     <p className="mt-1 break-all text-sm text-[#9FB3A6]">
-                      {buyer_email || "Email not available"}
+                      {buyer?.email || "Email not available"}
                     </p>
 
                   </div>
@@ -280,7 +301,7 @@ const JobDetails = () => {
                   </div>
 
                   <p className="mt-2 text-xs text-[#6B8577]">
-                    Buyer budget: ${min_price} — ${max_price}
+                    Buyer budget: ${min_price ?? 0} — ${max_price ?? 0}
                   </p>
 
                 </div>
