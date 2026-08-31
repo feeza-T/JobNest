@@ -2,16 +2,15 @@ import express from "express";
 import cors from "cors";
 import dotenv from "dotenv";
 import { MongoClient, ObjectId } from "mongodb";
-
+import jwt from "jsonwebtoken";
+import cookieParser from "cookie-parser";
 dotenv.config();
 
 const port = process.env.PORT || 9000;
 
 const app = express();
 
-
 // middleware
-
 const corsOptions = {
   origin: ["http://localhost:5173", "http://localhost:5174"],
   credentials: true,
@@ -20,10 +19,9 @@ const corsOptions = {
 
 app.use(cors(corsOptions));
 app.use(express.json());
-
+app.use(cookieParser());
 
 // MongoDB
-
 const client = new MongoClient(
   `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASS}@cluster0.vyo7g.mongodb.net/?appName=Cluster0`
 );
@@ -34,8 +32,31 @@ const jobsCollection = client.db('jobnest').collection("jobs");
 const bidsCollection = client.db('jobnest').collection("bids");
 
 
-// Get all jobs
+//JWT generate
+app.post('/jwt' , async(req,res)=>{
+  const user = req.body
+  const token = jwt.sign(user,process.env.ACCESS_TOKEN_SECRET ,{
+    expiresIn : '365d'
+  })
+  res.cookie('token' , token , {
+   httpOnly: true,
+    secure: false,
+    sameSite: "lax"
+   }) . send ({success : true })
+})
 
+//clear token from logout
+app.get('/logout' , (req,res)=>{
+  res.clearCookie('token' ,  {
+    httpOnly: true,
+    secure: false,
+    sameSite: "lax"
+  }) 
+  . send ({success : true })
+
+})
+
+// Get all jobs
 app.get("/jobs", async (req, res) => {
   const result = await jobsCollection.find().toArray();
 

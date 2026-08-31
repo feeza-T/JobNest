@@ -1,7 +1,9 @@
+
 import { useContext, useEffect } from "react"
 import { Link, useLocation, useNavigate } from "react-router-dom"
 import { AuthContext } from "../../provider/AuthProvider"
 import toast from "react-hot-toast"
+import axios from "axios"
 
 const jobTags = [
   "Product Designer",
@@ -17,55 +19,83 @@ const Login = () => {
   const location = useLocation()
   const navigate = useNavigate()
 
- const {signIn,signInWithGoogle, user, loading } = useContext(AuthContext)
+  const { signIn, signInWithGoogle, user, loading } = useContext(AuthContext)
 
- //id user is already login, then it should redirect to home 
- useEffect(()=>{
-  if(user){
-    navigate('/')
+  // If user is already logged in, then it should redirect to home
+  useEffect(() => {
+    if (user) {
+      navigate("/", { replace: true })
+    }
+  }, [navigate, user])
+
+
+  // Google signin
+  const handleGoogleSignIn = async () => {
+    try {
+      const result = await signInWithGoogle()
+
+      const { data } = await axios.post(
+        `${import.meta.env.VITE_API_URL}/jwt`,
+        { email: result?.user?.email },
+        {
+          withCredentials: true
+        }
+      )
+
+      console.log(data)
+
+      toast.success("Signin Successful")
+
+      // Go to home
+      navigate("/", { replace: true })
+    }
+    catch (err) {
+      console.log(err)
+      toast.error(err?.message)
+    }
   }
- } , [navigate,user])
 
 
- const from = location.state || '/'
- //Google signin
- const handleGoogleSignIn =async() =>{
-  try{
-    await signInWithGoogle()
-    toast.success('Signin Successful')
-    navigate(from,{replace : true})
+  // Email password signin
+  const handleSignIn = async e => {
+    e.preventDefault()
+
+    const form = e.target
+    const email = form.email.value
+    const pass = form.password.value
+
+    console.log({ email, pass })
+
+    try {
+      // User login
+      const result = await signIn(email, pass)
+
+      const { data } = await axios.post(
+        `${import.meta.env.VITE_API_URL}/jwt`,
+        { email: result?.user?.email },
+        {
+          withCredentials: true
+        }
+      )
+
+      console.log(data)
+
+      toast.success("SignIn Successful")
+
+      // Go to home
+      navigate("/", { replace: true })
+    }
+    catch (err) {
+      console.log(err)
+      toast.error(err?.message)
+    }
   }
-  catch(err)
-  {
-    console.log(err)
-    toast.error(err?.message)
-  }
 
- }
 
- //email password signin
- const handleSignIn = async e=>{
-  e.preventDefault()
-  const form=e.target
-  const email = form.email.value
-  const pass= form.password.value 
-  console.log({email,pass})
+  // For some seconds the login page is showing if user is already logged in,
+  // that's why this part returns nothing
+  if (user || loading) return null
 
-  try{
-    //user login
-    const result = await signIn(email,pass)
-    console.log(result)
-     navigate(from,{replace : true})
-    toast.success('SignIn Successful')
-  }
-  catch (err){
-    console.log(err)
-    toast.error(err?.message)
-  }
- }
-
-//for some second the login page is showing ,if user is already login still, thatswhy this part,return nothing
- if(user || loading ) return 
 
   return (
     <div className="relative min-h-[calc(100vh-306px)] overflow-hidden bg-[#080D0B] px-4 py-10 text-[#F5F7F4]">
@@ -155,7 +185,8 @@ const Login = () => {
             <button
               type="button"
               className="flex w-full items-center justify-center gap-3 rounded-2xl border border-[#26332D] bg-[#16211C] px-4 py-3.5 text-sm font-semibold text-[#F5F7F4] transition-all duration-300 hover:-translate-y-1 hover:border-[#FFB547]/50 hover:shadow-[0_15px_40px_-20px_#FFB547]"
-            onClick={handleGoogleSignIn}>
+              onClick={handleGoogleSignIn}
+            >
               <svg className="h-5 w-5" viewBox="0 0 40 40">
                 <path
                   d="M36.3425 16.7358H35V16.6667H20V23.3333H29.4192C28.045 27.2142 24.3525 30 20 30C14.4775 30 10 25.5225 10 20C10 14.4775 14.4775 9.99999 20 9.99999C22.5492 9.99999 24.8683 10.9617 26.6342 12.5325L31.3483 7.81833C28.3717 5.04416 24.39 3.33333 20 3.33333C10.7958 3.33333 3.33335 10.7958 3.33335 20C3.33335 29.2042 10.7958 36.6667 20 36.6667C29.2042 36.6667 36.6667 29.2042 36.6667 20C36.6667 18.8825 36.5517 17.7917 36.3425 16.7358Z"
@@ -274,3 +305,4 @@ const Login = () => {
 }
 
 export default Login
+

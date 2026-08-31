@@ -1,12 +1,16 @@
 
-import { Link, useNavigate } from "react-router-dom"
+import { Link, useLocation, useNavigate } from "react-router-dom"
 import {AuthContext} from '../../provider/AuthProvider'
 import { useContext } from "react"
 import toast from "react-hot-toast"
+import axios from 'axios'
 
 const Register = () => {
   
   const navigate= useNavigate()
+  const location = useLocation()
+
+  const from = location.state || '/'
 
 const {
   signInWithGoogle,
@@ -29,10 +33,18 @@ const {
     try{
       //user registration
       const result = await createUser(email,pass)
-      console.log(result)
+      
       await updateUserProfile(name,photo)
-      setUser({...user, photoUR : photo ,displayName: name })
-       navigate(from,{replace : true})
+      //Optimistic update
+      setUser({...result?.user, photoUR : photo ,displayName: name })
+     const {data} = await axios.post(`${import.meta.env.VITE_API_URL}/jwt`,
+     {email: result ?.user?.email},
+    {
+      withCredentials : true
+    }
+  )
+     console.log(data) 
+    navigate('/', { replace: true })
       toast.success('SignUp successfully')
     }
     catch(err){
@@ -45,9 +57,16 @@ const {
    //Google signin
  const handleGoogleSignIn =async() =>{
   try{
-    await signInWithGoogle()
+    const result = await signInWithGoogle()
+    const {data} = await axios.post(`${import.meta.env.VITE_API_URL}/jwt`,
+     {email: result ?.user?.email},
+    {
+      withCredentials : true
+    }
+  )
+    console.log(data)
     toast.success('Signin Successful')
-     navigate(from,{replace : true})
+    navigate('/', { replace: true })
   }
   catch(err)
   {
