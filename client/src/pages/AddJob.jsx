@@ -1,11 +1,12 @@
-import { useContext, useRef, useState } from "react"
-import { AuthContext } from "../provider/AuthProvider"
+import { useRef, useState } from "react"
+
 import { useNavigate } from "react-router-dom"
 import { motion } from "framer-motion"
 import axios from "axios"
 import DatePicker from "react-datepicker"
 import "react-datepicker/dist/react-datepicker.css"
 import toast from "react-hot-toast"
+import useAuth from "../hooks/useAuth"
 
 const CATEGORIES = [
   "Web Development",
@@ -21,7 +22,8 @@ const DECK_CARDS = [
 ]
 
 const AddJob = () => {
-  const { user } = useContext(AuthContext)
+ 
+  const {user } = useAuth()
   const navigate = useNavigate()
 
   // Project start date

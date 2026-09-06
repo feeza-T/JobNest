@@ -20,11 +20,11 @@ const router = createBrowserRouter(
         element: <Main></Main>,
         errorElement:<ErrorPage></ErrorPage>,
         children: [
-           {
-             index: true,
-            element: <Home></Home>,
-            
-           },
+          {
+  index: true,
+  element: <Home></Home>,
+  loader: () => fetch(`${import.meta.env.VITE_API_URL}/jobs`),
+},
            {
              path:'/login',
             element: <Login></Login>
