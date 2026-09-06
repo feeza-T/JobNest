@@ -21,6 +21,31 @@ app.use(cors(corsOptions));
 app.use(express.json());
 app.use(cookieParser());
 
+//verify jwt middlewire
+const verifyToken = (req,res,next ) =>{
+  const token = req.cookies?.token
+
+  if(!token) return res.status(401).send({message : 'Unauthorized access'})
+  if(token){
+    jwt.verify(token,process.env.ACCESS_TOKEN_SECRET , (err, decoded) =>{
+      if(err)
+      {
+        console.log(err)
+        return res.status(401).send({message : 'Unauthorized access'})
+      }
+      
+    console.log(decoded)
+    
+    req.user = decoded  
+    next ()
+    }
+ 
+)
+}
+
+
+}
+
 // MongoDB
 const client = new MongoClient(
   `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASS}@cluster0.vyo7g.mongodb.net/?appName=Cluster0`
@@ -91,9 +116,15 @@ app.post('/job' , async (req,res)=>{
 })
 
 
-//get all jobs posted by me
-app.get('/jobs/:email', async(req, res)=>{
+//get all jobs posted by a specific user
+app.get('/jobs/:email',verifyToken, async(req, res)=>{
+  const tokenEmail = req.user.email
   const email = req.params.email
+
+  if(!tokenEmail !== email){
+    return res.status(403).send({message : 'Forbidden access'} )
+  }
+
   const query = {'buyer.email' : email }
   const result = await jobsCollection.find(query).toArray()
   res.send(result)
@@ -123,7 +154,7 @@ app.put('/job/:id' , async (req,res)=>{
 })
 
 //get all bids for a user by email from db
-app.get('/my-bids/:email', async(req, res)=>{
+app.get('/my-bids/:email',verifyToken, async(req, res)=>{
   const email = req.params.email
   const query = {email : email }
   const result = await bidsCollection.find(query).toArray()
@@ -131,7 +162,7 @@ app.get('/my-bids/:email', async(req, res)=>{
 })
 
 //get all bid requests from db for job owner->buyers email
-app.get('/bid-requests/:email', async (req, res) => {
+app.get('/bid-requests/:email', verifyToken, async (req, res) => {
   const email = req.params.email
 
   const query = {
@@ -145,7 +176,7 @@ app.get('/bid-requests/:email', async (req, res) => {
 
 
 //update Bid Status
-app.patch('/bid/:id', async (req,res)=>{
+app.patch('/bid/:id', verifyToken, async (req,res)=>{
   const id = req.params.id
   const status = req.body
   const query = {_id : new ObjectId(id)}
