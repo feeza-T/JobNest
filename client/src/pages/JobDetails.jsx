@@ -95,7 +95,7 @@ const { data } = await axiosSecure.post(
 
         {/* Back button */}
         <Link
-          to="/"
+          to="/jobs"
           className="mb-6 inline-flex items-center gap-2 text-sm text-[#9FB3A6] transition hover:text-[#F4A93A]"
         >
           <span>←</span>

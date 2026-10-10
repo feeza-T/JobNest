@@ -1,6 +1,7 @@
 import { useLoaderData } from "react-router-dom";
 import Banner from "../components/Banner";
 import TabCategories from "../components/TabCategories";
+import WhyJobNest from "../components/WhyJobNest";
 
 const Home = () => {
   const jobs = useLoaderData();
@@ -11,6 +12,8 @@ const Home = () => {
     <div>
       <Banner />
       <TabCategories />
+      <WhyJobNest></WhyJobNest>
+      
     </div>
   );
 };
