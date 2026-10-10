@@ -21,13 +21,11 @@ const JobCard = ({ job, index = 0 }) => {
 
   const cardRef = useRef(null)
 
-  // Raw pointer position
   const mouseX = useMotionValue(0)
   const mouseY = useMotionValue(0)
 
-  // Tilt springs
   const rotateX = useSpring(
-    useTransform(mouseY, [-0.5, 0.5], [9, -9]),
+    useTransform(mouseY, [-0.5, 0.5], [5, -5]),
     {
       stiffness: 250,
       damping: 22,
@@ -35,14 +33,13 @@ const JobCard = ({ job, index = 0 }) => {
   )
 
   const rotateY = useSpring(
-    useTransform(mouseX, [-0.5, 0.5], [-9, 9]),
+    useTransform(mouseX, [-0.5, 0.5], [-5, 5]),
     {
       stiffness: 250,
       damping: 22,
     }
   )
 
-  // Spotlight
   const glowX = useTransform(
     mouseX,
     [-0.5, 0.5],
@@ -58,89 +55,92 @@ const JobCard = ({ job, index = 0 }) => {
   const glowBackground = useTransform(
     [glowX, glowY],
     ([x, y]) =>
-      `radial-gradient(240px circle at ${x} ${y}, rgba(244,169,58,0.16), transparent 70%)`
+      `radial-gradient(
+        220px circle at ${x} ${y},
+        rgba(244,169,58,0.12),
+        transparent 70%
+      )`
   )
 
-  // Mouse move
-  const handleMouseMove = (e) => {
+  const handleMouseMove = e => {
     if (!cardRef.current) return
 
-    const rect = cardRef.current.getBoundingClientRect()
+    const rect =
+      cardRef.current.getBoundingClientRect()
 
     mouseX.set(
-      (e.clientX - rect.left) / rect.width - 0.5
+      (e.clientX - rect.left) /
+        rect.width -
+        0.5
     )
 
     mouseY.set(
-      (e.clientY - rect.top) / rect.height - 0.5
+      (e.clientY - rect.top) /
+        rect.height -
+        0.5
     )
   }
 
-  // Mouse leave
   const handleMouseLeave = () => {
     mouseX.set(0)
     mouseY.set(0)
   }
 
   return (
-    <Link to={`/jobs/${_id}`}>
-      <motion.div
+    <Link
+      to={`/jobs/${_id}`}
+      className="block h-full"
+    >
+      <motion.article
         ref={cardRef}
         onMouseMove={handleMouseMove}
         onMouseLeave={handleMouseLeave}
         initial={{
           opacity: 0,
-          y: 28,
-          rotateX: -14,
+          y: 20,
         }}
         animate={{
           opacity: 1,
           y: 0,
-          rotateX: 0,
-        }}
-        exit={{
-          opacity: 0,
-          y: -16,
-          transition: {
-            duration: 0.25,
-          },
         }}
         transition={{
-          duration: 0.55,
-          delay: index * 0.06,
-          ease: [0.22, 1, 0.36, 1],
+          duration: 0.45,
+          delay: index * 0.04,
         }}
         style={{
           rotateX,
           rotateY,
-          transformStyle: "preserve-3d",
           transformPerspective: 900,
+          transformStyle: "preserve-3d",
         }}
         className="
-          jn-body
           group
           relative
+          flex
+          h-full
+          min-h-[310px]
           w-full
-          max-w-sm
+          flex-col
           overflow-hidden
           rounded-2xl
           border
           border-[#8FA998]/20
           bg-[#0F2E22]
-          p-5
-          shadow-[0_25px_60px_-25px_rgba(0,0,0,0.65)]
-          transition-colors
+          p-4
+          shadow-[0_18px_45px_-25px_rgba(0,0,0,0.7)]
+          transition-all
           duration-300
+          hover:-translate-y-1
           hover:border-[#F4A93A]/40
+          hover:shadow-[0_24px_55px_-28px_rgba(244,169,58,0.25)]
         "
       >
-        {/* Cursor tracking spotlight */}
+        {/* Cursor glow */}
         <motion.div
           className="
             pointer-events-none
             absolute
             inset-0
-            z-0
             opacity-0
             transition-opacity
             duration-300
@@ -151,114 +151,168 @@ const JobCard = ({ job, index = 0 }) => {
           }}
         />
 
-        {/* Faint fixed glow */}
+        {/* Decorative glow */}
         <div
           className="
             pointer-events-none
             absolute
-            -right-10
-            -top-10
+            -right-12
+            -top-12
             h-28
             w-28
             rounded-full
             bg-[#F4A93A]/10
-            blur-2xl
+            blur-3xl
           "
         />
 
-        <div
-          className="relative z-10"
-          style={{
-            transformStyle: "preserve-3d",
-          }}
-        >
+        <div className="relative z-10 flex h-full flex-col">
 
-          {/* Top row */}
-          <div className="flex items-center justify-between gap-2">
-
-            <span className="text-[11px] font-medium text-[#9FB3A6]">
-              Deadline:{" "}
-              <span className="text-[#D9E4DC]">
-                {deadline
-                  ? new Date(
-                      deadline
-                    ).toLocaleDateString()
-                  : "Not specified"}
-              </span>
-            </span>
-
+          {/* Category */}
+          <div className="mb-3">
             <span
               className="
+                inline-flex
+                max-w-full
                 rounded-full
                 border
-                border-[#F4A93A]/30
+                border-[#F4A93A]/25
                 bg-[#F4A93A]/10
-                px-3
+                px-2.5
                 py-1
                 text-[9px]
                 font-semibold
                 uppercase
-                tracking-wide
+                tracking-[0.08em]
                 text-[#F4A93A]
               "
             >
-              {category || "Uncategorized"}
+              <span className="truncate">
+                {category || "Uncategorized"}
+              </span>
             </span>
-
           </div>
 
           {/* Title */}
-          <h1
-            style={{
-              transform: "translateZ(28px)",
-            }}
+          <h2
             className="
-              jn-display
-              mt-3
-              text-xl
-              font-medium
-              leading-snug
+              line-clamp-2
+              min-h-[48px]
+              text-[17px]
+              font-semibold
+              leading-6
               text-[#FAF6EF]
+              transition-colors
+              group-hover:text-[#F4A93A]
             "
           >
             {job_title || "Untitled Job"}
-          </h1>
+          </h2>
 
           {/* Description */}
-          <p className="mt-2 line-clamp-3 text-sm leading-6 text-[#9FB3A6]">
+          <p
+            className="
+              mt-2
+              line-clamp-3
+              min-h-[60px]
+              text-xs
+              leading-5
+              text-[#9FB3A6]
+            "
+          >
             {description ||
               "No description available."}
           </p>
 
-          {/* Divider */}
-          <div className="mt-4 h-px w-full bg-gradient-to-r from-[#8FA998]/30 via-[#8FA998]/10 to-transparent" />
-
-          {/* Price */}
+          {/* Meta */}
           <div
-            style={{
-              transform: "translateZ(24px)",
-            }}
-            className="mt-4 flex items-baseline gap-1.5"
+            className="
+              mt-4
+              rounded-xl
+              border
+              border-[#8FA998]/10
+              bg-[#092219]
+              p-3
+            "
           >
-            <span className="jn-display text-lg text-[#F4A93A]">
-              ${min_price ?? 0}
+            {/* Budget */}
+            <div className="flex items-center justify-between gap-2">
+              <span className="text-[10px] uppercase tracking-wide text-[#6B8577]">
+                Budget
+              </span>
+
+              <span className="text-sm font-semibold text-[#F4A93A]">
+                ${min_price ?? 0}
+                <span className="mx-1 text-[#6B8577]">
+                  –
+                </span>
+                ${max_price ?? 0}
+              </span>
+            </div>
+
+            {/* Deadline */}
+            <div className="mt-2 flex items-center justify-between gap-2">
+              <span className="text-[10px] uppercase tracking-wide text-[#6B8577]">
+                Deadline
+              </span>
+
+              <span className="text-xs font-medium text-[#D9E4DC]">
+                {deadline
+                  ? new Date(
+                      deadline
+                    ).toLocaleDateString(
+                      "en-GB",
+                      {
+                        day: "2-digit",
+                        month: "short",
+                        year: "numeric",
+                      }
+                    )
+                  : "Not specified"}
+              </span>
+            </div>
+          </div>
+
+          {/* Bottom */}
+          <div
+            className="
+              mt-auto
+              flex
+              items-center
+              justify-between
+              border-t
+              border-[#8FA998]/10
+              pt-3
+            "
+          >
+            <span className="text-[11px] font-medium text-[#9FB3A6]">
+              View details
             </span>
 
-            <span className="text-xs text-[#6B8577]">
-              —
-            </span>
-
-            <span className="jn-display text-lg text-[#F4A93A]">
-              ${max_price ?? 0}
-            </span>
-
-            <span className="ml-1 text-[10px] uppercase tracking-wide text-[#6B8577]">
-              budget
+            <span
+              className="
+                flex
+                h-7
+                w-7
+                items-center
+                justify-center
+                rounded-full
+                bg-[#163B2D]
+                text-sm
+                text-[#F4A93A]
+                transition-all
+                duration-300
+                group-hover:translate-x-1
+                group-hover:bg-[#F4A93A]
+                group-hover:text-[#0F2E22]
+              "
+            >
+              →
             </span>
           </div>
 
         </div>
-      </motion.div>
+      </motion.article>
     </Link>
   )
 }

@@ -1,38 +1,47 @@
 import axios from 'axios'
 import useAuth from './useAuth'
 import { useNavigate } from 'react-router-dom'
-
+import { useEffect } from 'react'
 
 const axiosSecure = axios.create({
-    baseURL : import.meta.env.VITE_API_URL,
-    withCredentials:true,
+  baseURL: import.meta.env.VITE_API_URL,
+  withCredentials: true,
 })
 
-const useAxiosSecure = ()=>{
-    const {logOut} = useAuth()
-    const navigate = useNavigate()
+const useAxiosSecure = () => {
+  const { logOut } = useAuth()
+  const navigate = useNavigate()
 
-    //interceptor->Response + Request 
-    axiosSecure.interceptors.response.use(
-        res=>{
-            console.log('response e ashar aagei thamabo')
+  useEffect(() => {
+    const interceptor = axiosSecure.interceptors.response.use(
+      res => {
         return res
-    },
-        async error =>{
-        console.log('Error from axios interceptor', error.response)
-        if(error.response.status === 401 || error.response.status === 403)
-      {
-         await logOut()
-       navigate('/login')
+      },
+
+      async error => {
+        console.log(
+          'Error from axios interceptor',
+          error.response
+        )
+
+        if (
+          error.response?.status === 401 ||
+          error.response?.status === 403
+        ) {
+          await logOut()
+          navigate('/login')
+        }
+
+        return Promise.reject(error)
       }
-      return Promise.reject(error)
+    )
+
+    return () => {
+      axiosSecure.interceptors.response.eject(interceptor)
     }
-)
+  }, [logOut, navigate])
 
-
-    //axios.interceptors.request
-     
-    return axiosSecure
+  return axiosSecure
 }
 
 export default useAxiosSecure

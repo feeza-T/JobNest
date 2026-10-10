@@ -55,16 +55,31 @@ const AuthProvider = ({ children }) => {
   }
 
   // onAuthStateChange
-  useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, currentUser => {
+ useEffect(() => {
+  const unsubscribe = onAuthStateChanged(auth, async currentUser => {
+    try {
+      if (currentUser?.email) {
+        await axios.post(
+          `${import.meta.env.VITE_API_URL}/jwt`,
+          {
+            email: currentUser.email,
+          },
+          {
+            withCredentials: true,
+          }
+        )
+      }
+
       setUser(currentUser)
-      console.log('CurrentUser-->', currentUser)
+    } catch (error) {
+      console.log("JWT sync error:", error)
+    } finally {
       setLoading(false)
-    })
-    return () => {
-      return unsubscribe()
     }
-  }, [])
+  })
+
+  return () => unsubscribe()
+}, [])
 
   const authInfo = {
     user,

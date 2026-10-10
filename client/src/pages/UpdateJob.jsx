@@ -1,11 +1,13 @@
 import { useLoaderData, useNavigate, useParams } from "react-router-dom"
 import { useState } from "react"
-import axios from "axios"
 import DatePicker from "react-datepicker"
 import "react-datepicker/dist/react-datepicker.css"
 import toast from "react-hot-toast"
+import useAxiosSecure from "../hooks/useAxiosSecure"
 
 const UpdateJob = () => {
+
+  const axiosSecure = useAxiosSecure()
   const navigate = useNavigate()
   const job = useLoaderData()
 
@@ -49,10 +51,10 @@ const UpdateJob = () => {
       setLoading(true)
 
       // Backend uses PUT, not PATCH
-      await axios.put(
-        `${import.meta.env.VITE_API_URL}/job/${id}`,
-        updatedJob
-      )
+   await axiosSecure.put(
+  `/job/${id}`,
+  updatedJob
+)
 
       toast.success("Job updated successfully")
 

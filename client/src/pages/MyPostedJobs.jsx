@@ -52,10 +52,9 @@ const MyPostedJobs = () => {
     if (!confirmDelete) return
 
     try {
-      await axiosSecure.delete(
-        `/jobs/${id}`
-      )
-
+    await axiosSecure.delete(
+  `/job/${id}`
+)
       toast.success("Job deleted successfully")
 
       // Refresh jobs after deleting

@@ -1,17 +1,23 @@
 import { useRef, useState } from "react"
-
 import { useNavigate } from "react-router-dom"
 import { motion } from "framer-motion"
-import axios from "axios"
 import DatePicker from "react-datepicker"
 import "react-datepicker/dist/react-datepicker.css"
 import toast from "react-hot-toast"
+import { useMutation, useQueryClient } from "@tanstack/react-query"
 import useAuth from "../hooks/useAuth"
+import useAxiosSecure from "../hooks/useAxiosSecure"
 
 const CATEGORIES = [
   "Web Development",
+  "UI/UX Design",
   "Graphic Design",
   "Digital Marketing",
+  "Writing",
+  "Video Editing",
+  "Data Analysis",
+  "Mobile Development",
+  "Programming",
 ]
 
 // Decorative bid cards
@@ -22,17 +28,16 @@ const DECK_CARDS = [
 ]
 
 const AddJob = () => {
- 
-  const {user } = useAuth()
+  const { user } = useAuth()
   const navigate = useNavigate()
+  const axiosSecure = useAxiosSecure()
+  const queryClient = useQueryClient()
 
   // Project start date
   const [startDate, setStartDate] = useState(new Date())
 
   // Project/job deadline
   const [selectedDate, setSelectedDate] = useState(new Date())
-
-  const [submitting, setSubmitting] = useState(false)
 
   const sceneRef = useRef(null)
 
@@ -41,8 +46,34 @@ const AddJob = () => {
     y: 0,
   })
 
+  // Add Job Mutation
+  const { mutateAsync, isPending } = useMutation({
+    mutationFn: async newJob => {
+      const { data } = await axiosSecure.post("/job", newJob)
+      console.log(data)
+      return data
+    },
+    onSuccess: () => {
+      console.log("Job added successfully")
+      toast.success("Job posted successfully!")
+
+      queryClient.invalidateQueries({ queryKey: ["jobs"] })
+      queryClient.invalidateQueries({ queryKey: ["my-posted-jobs"] })
+
+      navigate("/my-posted-jobs")
+    },
+    onError: err => {
+      console.log("Error posting job:", err)
+
+      toast.error(
+        err?.response?.data?.message ||
+          "Something went wrong, try again"
+      )
+    },
+  })
+
   // Mouse movement animation
-  const handleMouseMove = (e) => {
+  const handleMouseMove = e => {
     const rect = sceneRef.current?.getBoundingClientRect()
 
     if (!rect) return
@@ -64,7 +95,7 @@ const AddJob = () => {
   }
 
   // Submit job
-  const handleSubmit = async (e) => {
+  const handleSubmit = async e => {
     e.preventDefault()
 
     if (!user) {
@@ -119,33 +150,15 @@ const AddJob = () => {
     console.log("Job data:", newJob)
 
     try {
-      setSubmitting(true)
-
-      const { data } = await axios.post(
-        `${import.meta.env.VITE_API_URL}/job`,
-        newJob
-      )
-
-      console.log("Server response:", data)
-
-      toast.success("Job posted successfully!")
+      await mutateAsync(newJob)
 
       form.reset()
 
       // Reset dates
       setStartDate(new Date())
       setSelectedDate(new Date())
-
-      navigate("/my-posted-jobs")
     } catch (err) {
-      console.log("Error posting job:", err)
-
-      toast.error(
-        err?.response?.data?.message ||
-          "Something went wrong, try again"
-      )
-    } finally {
-      setSubmitting(false)
+      console.log(err)
     }
   }
 
@@ -331,7 +344,7 @@ const AddJob = () => {
                     Select a category
                   </option>
 
-                  {CATEGORIES.map((c) => (
+                  {CATEGORIES.map(c => (
                     <option key={c} value={c}>
                       {c}
                     </option>
@@ -408,7 +421,7 @@ const AddJob = () => {
                 <DatePicker
                   id="startDate"
                   selected={startDate}
-                  onChange={(date) => {
+                  onChange={date => {
                     setStartDate(date)
 
                     // If deadline becomes earlier than start date,
@@ -435,7 +448,7 @@ const AddJob = () => {
                 <DatePicker
                   id="deadline"
                   selected={selectedDate}
-                  onChange={(date) => setSelectedDate(date)}
+                  onChange={date => setSelectedDate(date)}
                   minDate={startDate}
                   dateFormat="yyyy-MM-dd"
                   className="mt-2 w-full rounded-xl border border-[#8FA998]/20 bg-[#092219] px-4 py-3 text-[#FAF6EF] outline-none transition focus:border-[#F4A93A]/50 focus:ring-2 focus:ring-[#F4A93A]/10"
@@ -501,11 +514,11 @@ const AddJob = () => {
               {/* Submit */}
               <button
                 type="submit"
-                disabled={submitting}
+                disabled={isPending}
                 className="group relative w-full overflow-hidden rounded-xl bg-[#F4A93A] px-6 py-3.5 font-semibold text-[#0F2E22] transition-all duration-300 hover:-translate-y-0.5 hover:bg-[#ffc064] hover:shadow-[0_10px_30px_-10px_rgba(244,169,58,0.6)] disabled:cursor-not-allowed disabled:opacity-60"
               >
                 <span className="relative z-10">
-                  {submitting ? "Posting…" : "Post Job →"}
+                  {isPending ? "Posting…" : "Post Job →"}
                 </span>
               </button>
 

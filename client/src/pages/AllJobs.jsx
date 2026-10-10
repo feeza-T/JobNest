@@ -1,112 +1,249 @@
-import JobCard from '../components/JobCard'
+import { useEffect, useState } from "react"
+import JobCard from "../components/JobCard"
+import axios from "axios"
+
+const CATEGORIES = [
+  "Web Development",
+  "UI/UX Design",
+  "Graphic Design",
+  "Digital Marketing",
+  "Writing",
+  "Video Editing",
+  "Data Analysis",
+  "Mobile Development",
+  "Programming",
+]
 
 const AllJobs = () => {
-  const pages = [1, 2, 3, 4, 5]
-  return (
-    <div className='container px-6 py-10 mx-auto min-h-[calc(100vh-306px)] flex flex-col justify-between'>
-      <div>
-        <div className='flex flex-col md:flex-row justify-center items-center gap-5 '>
-          <div>
-            <select
-              name='category'
-              id='category'
-              className='border p-4 rounded-lg'
-            >
-              <option value=''>Filter By Category</option>
-              <option value='Web Development'>Web Development</option>
-              <option value='Graphics Design'>Graphics Design</option>
-              <option value='Digital Marketing'>Digital Marketing</option>
-            </select>
-          </div>
+  const [itemsPerPage] = useState(6)
+  const [currentPage, setCurrentPage] = useState(1)
+  const [count, setCount] = useState(0)
+  const [jobs, setJobs] = useState([])
+  const [filter, setFilter] = useState("")
+  const [sort, setSort] = useState("")
+  const [search, setSearch] = useState("")
+  const [searchText, setSearchText] = useState("")
 
-          <form>
-            <div className='flex p-1 overflow-hidden border rounded-lg    focus-within:ring focus-within:ring-opacity-40 focus-within:border-blue-400 focus-within:ring-blue-300'>
+  useEffect(() => {
+    const getData = async () => {
+      try {
+        const { data } = await axios(
+          `${import.meta.env.VITE_API_URL}/all-jobs?page=${currentPage}&size=${itemsPerPage}&filter=${filter}&sort=${sort}&search=${search}`
+        )
+
+        setJobs(data)
+      } catch (error) {
+        console.log(error)
+      }
+    }
+
+    getData()
+  }, [currentPage, itemsPerPage, filter, sort, search])
+
+  useEffect(() => {
+    const getCount = async () => {
+      try {
+        const { data } = await axios(
+          `${import.meta.env.VITE_API_URL}/jobs-count?filter=${filter}&search=${search}`
+        )
+
+        setCount(data.count)
+      } catch (error) {
+        console.log(error)
+      }
+    }
+
+    getCount()
+  }, [filter, search])
+
+  const numberOfPages = Math.ceil(count / itemsPerPage)
+
+  const pages = Array.from(
+    { length: numberOfPages },
+    (_, index) => index + 1
+  )
+
+  const handleSearch = e => {
+    e.preventDefault()
+    setSearch(searchText)
+    setCurrentPage(1)
+  }
+
+  const handleReset = () => {
+    setFilter("")
+    setSort("")
+    setSearch("")
+    setSearchText("")
+    setCurrentPage(1)
+  }
+
+  return (
+    <main className="min-h-screen bg-[#071C15] px-4 py-10 text-[#FAF6EF] md:px-8">
+      <div className="mx-auto max-w-7xl">
+
+        {/* Header */}
+        <div className="mb-7">
+          <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[#F4A93A]">
+            Explore Opportunities
+          </p>
+
+          <h1 className="mt-2 text-3xl font-semibold md:text-4xl">
+            Find work that fits you.
+          </h1>
+
+          <p className="mt-2 text-sm text-[#9FB3A6]">
+            Search, filter and sort available jobs.
+          </p>
+        </div>
+
+        {/* Controls */}
+        <div className="mb-7 rounded-2xl border border-[#8FA998]/20 bg-[#0F2E22] p-4">
+          <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-[1fr_2fr_1fr_auto]">
+
+            {/* Filter */}
+            <select
+              value={filter}
+              onChange={e => {
+                setFilter(e.target.value)
+                setCurrentPage(1)
+              }}
+              className="rounded-xl border border-[#8FA998]/20 bg-[#092219] px-4 py-3 text-sm text-[#FAF6EF] outline-none focus:border-[#F4A93A]/50"
+            >
+              <option value="">All Categories</option>
+
+              {CATEGORIES.map(category => (
+                <option key={category} value={category}>
+                  {category}
+                </option>
+              ))}
+            </select>
+
+            {/* Search */}
+            <form
+              onSubmit={handleSearch}
+              className="flex overflow-hidden rounded-xl border border-[#8FA998]/20 bg-[#092219]"
+            >
               <input
-                className='px-6 py-2 text-gray-700 placeholder-gray-500 bg-white outline-none focus:placeholder-transparent'
-                type='text'
-                name='search'
-                placeholder='Enter Job Title'
-                aria-label='Enter Job Title'
+                type="text"
+                value={searchText}
+                onChange={e => setSearchText(e.target.value)}
+                placeholder="Search job title..."
+                className="min-w-0 flex-1 bg-transparent px-4 py-3 text-sm text-[#FAF6EF] outline-none placeholder:text-[#6B8577]"
               />
 
-              <button className='px-1 md:px-4 py-3 text-sm font-medium tracking-wider text-gray-100 uppercase transition-colors duration-300 transform bg-gray-700 rounded-md hover:bg-gray-600 focus:bg-gray-600 focus:outline-none'>
+              <button
+                type="submit"
+                className="bg-[#F4A93A] px-5 text-sm font-semibold text-[#0F2E22] hover:bg-[#ffc064]"
+              >
                 Search
               </button>
-            </div>
-          </form>
-          <div>
+            </form>
+
+            {/* Sort */}
             <select
-              name='category'
-              id='category'
-              className='border p-4 rounded-md'
+              value={sort}
+              onChange={e => {
+                setSort(e.target.value)
+                setCurrentPage(1)
+              }}
+              className="rounded-xl border border-[#8FA998]/20 bg-[#092219] px-4 py-3 text-sm text-[#FAF6EF] outline-none focus:border-[#F4A93A]/50"
             >
-              <option value=''>Sort By Deadline</option>
-              <option value='dsc'>Descending Order</option>
-              <option value='asc'>Ascending Order</option>
+              <option value="">Sort By Deadline</option>
+              <option value="desc">Latest First</option>
+              <option value="asc">Earliest First</option>
             </select>
-          </div>
-          <button className='btn'>Reset</button>
-        </div>
-        <div className='grid grid-cols-1 gap-8 mt-8 xl:mt-16 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4'>
-          {/* {jobs.map(job => (
-            <JobCard key={job._id} job={job} />
-          ))} */}
-        </div>
-      </div>
 
-      <div className='flex justify-center mt-12'>
-        <button className='px-4 py-2 mx-1 text-gray-700 disabled:text-gray-500 capitalize bg-gray-200 rounded-md disabled:cursor-not-allowed disabled:hover:bg-gray-200 disabled:hover:text-gray-500 hover:bg-blue-500  hover:text-white'>
-          <div className='flex items-center -mx-1'>
-            <svg
-              xmlns='http://www.w3.org/2000/svg'
-              className='w-6 h-6 mx-1 rtl:-scale-x-100'
-              fill='none'
-              viewBox='0 0 24 24'
-              stroke='currentColor'
+            {/* Reset */}
+            <button
+              onClick={handleReset}
+              className="rounded-xl border border-[#8FA998]/20 bg-[#163B2D] px-5 py-3 text-sm font-semibold text-[#D9E4DC] hover:border-[#F4A93A]/40 hover:text-[#F4A93A]"
             >
-              <path
-                strokeLinecap='round'
-                strokeLinejoin='round'
-                strokeWidth='2'
-                d='M7 16l-4-4m0 0l4-4m-4 4h18'
-              />
-            </svg>
-
-            <span className='mx-1'>previous</span>
+              Reset
+            </button>
           </div>
-        </button>
+        </div>
 
-        {pages.map(btnNum => (
-          <button
-            key={btnNum}
-            className={`hidden px-4 py-2 mx-1 transition-colors duration-300 transform  rounded-md sm:inline hover:bg-blue-500  hover:text-white`}
-          >
-            {btnNum}
-          </button>
-        ))}
+        {/* Result info */}
+        <div className="mb-5 flex items-center justify-between text-sm">
+          <p className="text-[#9FB3A6]">
+            Showing{" "}
+            <span className="font-semibold text-[#FAF6EF]">
+              {jobs.length}
+            </span>{" "}
+            jobs
+          </p>
 
-        <button className='px-4 py-2 mx-1 text-gray-700 transition-colors duration-300 transform bg-gray-200 rounded-md hover:bg-blue-500 disabled:hover:bg-gray-200 disabled:hover:text-gray-500 hover:text-white disabled:cursor-not-allowed disabled:text-gray-500'>
-          <div className='flex items-center -mx-1'>
-            <span className='mx-1'>Next</span>
+          <p className="text-[#6B8577]">
+            Total: {count}
+          </p>
+        </div>
 
-            <svg
-              xmlns='http://www.w3.org/2000/svg'
-              className='w-6 h-6 mx-1 rtl:-scale-x-100'
-              fill='none'
-              viewBox='0 0 24 24'
-              stroke='currentColor'
+        {/* Jobs */}
+        {jobs.length > 0 ? (
+         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3">
+  {jobs.map((job, index) => (
+    <JobCard
+      key={job._id}
+      job={job}
+      index={index}
+    />
+  ))}
+</div>
+        ) : (
+          <div className="rounded-2xl border border-[#8FA998]/20 bg-[#0F2E22] py-12 text-center">
+            <h3 className="text-lg font-semibold">
+              No jobs found
+            </h3>
+
+            <p className="mt-1 text-sm text-[#9FB3A6]">
+              Try changing your search or filter.
+            </p>
+          </div>
+        )}
+
+        {/* Pagination */}
+        {numberOfPages > 1 && (
+          <div className="mt-8 flex flex-wrap justify-center gap-2">
+
+            <button
+              disabled={currentPage === 1}
+              onClick={() =>
+                setCurrentPage(currentPage - 1)
+              }
+              className="rounded-lg border border-[#8FA998]/20 bg-[#0F2E22] px-4 py-2 text-sm text-[#D9E4DC] hover:text-[#F4A93A] disabled:cursor-not-allowed disabled:opacity-40"
             >
-              <path
-                strokeLinecap='round'
-                strokeLinejoin='round'
-                strokeWidth='2'
-                d='M17 8l4 4m0 0l-4 4m4-4H3'
-              />
-            </svg>
+              Previous
+            </button>
+
+            {pages.map(page => (
+              <button
+                key={page}
+                onClick={() => setCurrentPage(page)}
+                className={`h-9 min-w-9 rounded-lg border px-3 text-sm font-semibold ${
+                  currentPage === page
+                    ? "border-[#F4A93A] bg-[#F4A93A] text-[#0F2E22]"
+                    : "border-[#8FA998]/20 bg-[#0F2E22] text-[#D9E4DC] hover:text-[#F4A93A]"
+                }`}
+              >
+                {page}
+              </button>
+            ))}
+
+            <button
+              disabled={currentPage === numberOfPages}
+              onClick={() =>
+                setCurrentPage(currentPage + 1)
+              }
+              className="rounded-lg border border-[#8FA998]/20 bg-[#0F2E22] px-4 py-2 text-sm text-[#D9E4DC] hover:text-[#F4A93A] disabled:cursor-not-allowed disabled:opacity-40"
+            >
+              Next
+            </button>
+
           </div>
-        </button>
+        )}
+
       </div>
-    </div>
+    </main>
   )
 }
 

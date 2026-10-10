@@ -1,13 +1,15 @@
-import { useContext, useEffect, useState } from "react"
-import axios from "axios"
 import { motion } from "framer-motion"
-import { AuthContext } from "../provider/AuthProvider"
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
+import toast from "react-hot-toast"
+import useAxiosSecure from "../hooks/useAxiosSecure"
+import useAuth from "../hooks/useAuth"
 
 const categoryStyles = {
   "Web Development": "border-[#F4A93A]/30 bg-[#F4A93A]/10 text-[#F4A93A]",
   "Graphics Design": "border-[#8FA998]/30 bg-[#8FA998]/10 text-[#8FA998]",
   "Digital Marketing": "border-emerald-400/30 bg-emerald-400/10 text-emerald-400",
 }
+
 const defaultCategoryStyle =
   "border-[#6B8577]/30 bg-[#6B8577]/10 text-[#9FB3A6]"
 
@@ -25,40 +27,61 @@ const statusStyles = {
     dot: "bg-red-400",
   },
 }
+
 const defaultStatusStyle = {
   pill: "border-[#8FA998]/30 bg-[#8FA998]/10 text-[#8FA998]",
   dot: "bg-[#8FA998]",
 }
 
 const MyBids = () => {
-  const { user } = useContext(AuthContext)
-
-  const [bids, setBids] = useState([])
-
-  useEffect(() => {
-    if (user?.email) {
-      getData()
-    }
-  }, [user])
+  const { user } = useAuth()
+  const axiosSecure = useAxiosSecure()
+  const queryClient = useQueryClient()
 
   const getData = async () => {
-    const { data } = await axios(
-      `${import.meta.env.VITE_API_URL}/my-bids/${user?.email}`
-    )
-    setBids(data)
+    const { data } = await axiosSecure(`/my-bids/${user?.email}`)
+    return data
   }
 
-  // Mark bid as complete
-  const handleStatus = async (id, status) => {
-    try {
-      await axios.patch(`${import.meta.env.VITE_API_URL}/bid/${id}`, {
+  const { data: bids = [], isLoading } = useQuery({
+    queryKey: ["my-bids", user?.email],
+    queryFn: () => getData(),
+    enabled: !!user?.email,
+  })
+
+  const { mutateAsync } = useMutation({
+    mutationFn: async ({ id, status }) => {
+      const { data } = await axiosSecure.patch(`/bid/${id}`, {
         status,
       })
 
-      getData()
-    } catch (error) {
+      return data
+    },
+
+    onSuccess: () => {
+      toast.success("Bid status updated")
+
+      queryClient.invalidateQueries({
+        queryKey: ["my-bids"],
+      })
+    },
+
+    onError: error => {
       console.error(error)
-    }
+      toast.error("Something went wrong")
+    },
+  })
+
+  // Mark bid as complete
+  const handleStatus = async (id, status) => {
+    await mutateAsync({
+      id,
+      status,
+    })
+  }
+
+  if (isLoading) {
+    return <p>Data is still loading......</p>
   }
 
   return (
@@ -113,8 +136,10 @@ const MyBids = () => {
               </thead>
 
               <tbody className="divide-y divide-[#8FA998]/10">
-                {bids.map((bid) => {
-                  const status = statusStyles[bid.status] || defaultStatusStyle
+                {bids.map(bid => {
+                  const status =
+                    statusStyles[bid.status] || defaultStatusStyle
+
                   const catStyle =
                     categoryStyles[bid.category] || defaultCategoryStyle
 
@@ -152,6 +177,7 @@ const MyBids = () => {
                           <span
                             className={`h-1.5 w-1.5 rounded-full ${status.dot}`}
                           ></span>
+
                           <span className="text-xs font-medium">
                             {bid.status || "Pending"}
                           </span>
@@ -161,7 +187,9 @@ const MyBids = () => {
                       <td className="whitespace-nowrap px-6 py-4 text-sm">
                         <button
                           disabled={bid.status !== "In progress"}
-                          onClick={() => handleStatus(bid._id, "Complete")}
+                          onClick={() =>
+                            handleStatus(bid._id, "Complete")
+                          }
                           title="Mark Complete"
                           className={`rounded-full border px-3 py-1.5 text-xs font-semibold uppercase tracking-wider transition ${
                             bid.status !== "In progress"

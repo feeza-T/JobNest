@@ -1,4 +1,3 @@
-
 import { useContext, useState } from "react"
 import { AuthContext } from "../provider/AuthProvider"
 import { useLoaderData, Link, useNavigate } from "react-router-dom"
@@ -7,9 +6,11 @@ import axios from "axios"
 import DatePicker from "react-datepicker"
 import "react-datepicker/dist/react-datepicker.css"
 import toast from "react-hot-toast"
+import useAxiosSecure from "../hooks/useAxiosSecure"
 
 const JobDetails = () => {
   const { user } = useContext(AuthContext)
+  const axiosSecure = useAxiosSecure()
   const job = useLoaderData()
   const navigate = useNavigate()
 
@@ -31,56 +32,57 @@ const JobDetails = () => {
     setSelectedDate(date)
   }
 
-  const handleFormSubmission = async (e) => {
-    e.preventDefault()
+ const handleFormSubmission = async (e) => {
+  e.preventDefault()
 
-    // Prevent buyer from bidding on their own job
-    if (user?.email === buyer?.email) {
-      return toast.error("Action Not Permitted!")
-    }
-
-    const form = e.target
-    const jobId = _id
-    const price = parseFloat(form.price.value)
-
-    if (price < parseFloat(min_price)) {
-      return toast.error(
-        "Offer more or at least equal to Minimum Price"
-      )
-    }
-
-    const email = user?.email
-    const comment = form.comment.value
-    const bidDeadline = selectedDate
-
-    const status = "Pending"
-
-    const bidData = {
-      jobId,
-      job_title,
-      price,
-      email,
-      comment,
-      deadline: bidDeadline,
-      buyer_email: buyer?.email,
-      status,
-    }
-
-    try {
-      const { data } = await axios.post(
-        `${import.meta.env.VITE_API_URL}/bid`,
-        bidData
-      )
-
-      console.log(data)
-
-      toast.success("Bid Placed Successfully")
-      navigate("/my-bids")
-    } catch (err) {
-      console.log(err)
-      toast.error("Failed to place bid")
-    }
+  // Prevent buyer from bidding on their own job
+  if (user?.email === buyer?.email) {
+    return toast.error("Action Not Permitted!")
   }
+
+  const form = e.target
+  const jobId = _id
+  const price = parseFloat(form.price.value)
+
+  if (price < parseFloat(min_price)) {
+    return toast.error(
+      "Offer more or at least equal to Minimum Price"
+    )
+  }
+
+  const email = user?.email
+  const comment = form.comment.value
+  const bidDeadline = selectedDate
+
+  const status = "Pending"
+
+  const bidData = {
+    jobId,
+    job_title,
+    price,
+    email,
+    comment,
+    deadline: bidDeadline,
+    buyer_email: buyer?.email,
+    status,
+  }
+
+  try {
+const { data } = await axiosSecure.post(
+  "/bid",
+  bidData
+)
+    console.log(data)
+
+    toast.success("Bid Placed Successfully")
+    navigate("/my-bids")
+  } catch (err) {
+    toast.error(
+      err?.response?.data?.message || "Failed to place bid"
+    )
+    e.target.reset()
+  }
+}
 
   return (
     <main className="min-h-screen bg-[#071C15] px-4 py-10 md:px-8">
