@@ -45,6 +45,10 @@ const BidRequests = () => {
       queryClient.invalidateQueries({
         queryKey: ["bids"],
       })
+
+      queryClient.invalidateQueries({
+        queryKey: ["my-bids"],
+      })
     },
 
     onError: error => {
@@ -199,8 +203,7 @@ const BidRequests = () => {
                           bid.status
                         )}`}
                       >
-                        {bid.status ||
-                          "Pending"}
+                        {bid.status || "Pending"}
                       </span>
                     </td>
 
@@ -218,10 +221,7 @@ const BidRequests = () => {
                             )
                           }
                           disabled={
-                            bid.status ===
-                              "Complete" ||
-                            bid.status ===
-                              "Rejected"
+                            bid.status !== "Pending"
                           }
                           title="Accept"
                           className="flex h-8 w-8 items-center justify-center rounded-md border border-[#8FA998]/20 bg-[#092219] text-[#9FB3A6] transition hover:border-emerald-400/30 hover:text-emerald-300 disabled:cursor-not-allowed disabled:opacity-30"
@@ -239,10 +239,7 @@ const BidRequests = () => {
                             )
                           }
                           disabled={
-                            bid.status ===
-                              "Complete" ||
-                            bid.status ===
-                              "Rejected"
+                            bid.status !== "Pending"
                           }
                           title="Reject"
                           className="flex h-8 w-8 items-center justify-center rounded-md border border-[#8FA998]/20 bg-[#092219] text-[#9FB3A6] transition hover:border-red-400/30 hover:text-red-300 disabled:cursor-not-allowed disabled:opacity-30"

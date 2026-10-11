@@ -1,35 +1,56 @@
 import { motion } from "framer-motion"
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
+import {
+  useMutation,
+  useQuery,
+  useQueryClient,
+} from "@tanstack/react-query"
 import toast from "react-hot-toast"
 import useAxiosSecure from "../hooks/useAxiosSecure"
 import useAuth from "../hooks/useAuth"
 
 const categoryStyles = {
-  "Web Development": "border-[#F4A93A]/30 bg-[#F4A93A]/10 text-[#F4A93A]",
-  "Graphics Design": "border-[#8FA998]/30 bg-[#8FA998]/10 text-[#8FA998]",
-  "Digital Marketing": "border-emerald-400/30 bg-emerald-400/10 text-emerald-400",
+  "Web Development":
+    "border-[#F4A93A]/30 bg-[#F4A93A]/10 text-[#F4A93A]",
+
+  "Graphic Design":
+    "border-[#8FA998]/30 bg-[#8FA998]/10 text-[#8FA998]",
+
+  "Digital Marketing":
+    "border-emerald-400/30 bg-emerald-400/10 text-emerald-400",
 }
 
 const defaultCategoryStyle =
   "border-[#6B8577]/30 bg-[#6B8577]/10 text-[#9FB3A6]"
 
 const statusStyles = {
-  "In progress": {
-    pill: "border-[#F4A93A]/30 bg-[#F4A93A]/10 text-[#F4A93A]",
+  Pending: {
+    pill:
+      "border-[#F4A93A]/30 bg-[#F4A93A]/10 text-[#F4A93A]",
     dot: "bg-[#F4A93A]",
   },
+
+  "In Progress": {
+    pill:
+      "border-sky-400/30 bg-sky-400/10 text-sky-300",
+    dot: "bg-sky-300",
+  },
+
   Complete: {
-    pill: "border-emerald-400/30 bg-emerald-400/10 text-emerald-400",
+    pill:
+      "border-emerald-400/30 bg-emerald-400/10 text-emerald-400",
     dot: "bg-emerald-400",
   },
+
   Rejected: {
-    pill: "border-red-400/30 bg-red-400/10 text-red-400",
+    pill:
+      "border-red-400/30 bg-red-400/10 text-red-400",
     dot: "bg-red-400",
   },
 }
 
 const defaultStatusStyle = {
-  pill: "border-[#8FA998]/30 bg-[#8FA998]/10 text-[#8FA998]",
+  pill:
+    "border-[#8FA998]/30 bg-[#8FA998]/10 text-[#8FA998]",
   dot: "bg-[#8FA998]",
 }
 
@@ -39,96 +60,135 @@ const MyBids = () => {
   const queryClient = useQueryClient()
 
   const getData = async () => {
-    const { data } = await axiosSecure(`/my-bids/${user?.email}`)
+    const { data } = await axiosSecure(
+      `/my-bids/${user?.email}`
+    )
+
     return data
   }
 
-  const { data: bids = [], isLoading } = useQuery({
+  const {
+    data: bids = [],
+    isLoading,
+  } = useQuery({
     queryKey: ["my-bids", user?.email],
-    queryFn: () => getData(),
+    queryFn: getData,
     enabled: !!user?.email,
   })
 
-  const { mutateAsync } = useMutation({
+  const { mutateAsync, isPending } = useMutation({
     mutationFn: async ({ id, status }) => {
-      const { data } = await axiosSecure.patch(`/bid/${id}`, {
-        status,
-      })
+      const { data } = await axiosSecure.patch(
+        `/bid/${id}`,
+        {
+          status,
+        }
+      )
 
       return data
     },
 
     onSuccess: () => {
-      toast.success("Bid status updated")
+      toast.success("Work marked as complete")
 
       queryClient.invalidateQueries({
         queryKey: ["my-bids"],
+      })
+
+      queryClient.invalidateQueries({
+        queryKey: ["bids"],
       })
     },
 
     onError: error => {
       console.error(error)
-      toast.error("Something went wrong")
+
+      toast.error(
+        error?.response?.data?.message ||
+          "Failed to update bid"
+      )
     },
   })
 
-  // Mark bid as complete
-  const handleStatus = async (id, status) => {
+  const handleComplete = async id => {
     await mutateAsync({
       id,
-      status,
+      status: "Complete",
     })
   }
 
   if (isLoading) {
-    return <p>Data is still loading......</p>
+    return (
+      <div className="min-h-screen bg-[#071C15] px-4 py-10 text-center text-[#9FB3A6]">
+        Loading your bids...
+      </div>
+    )
   }
 
   return (
     <main className="min-h-screen bg-[#071C15] px-4 py-10 md:px-8">
+
       {/* Background glow */}
       <div className="pointer-events-none fixed left-0 top-20 h-72 w-72 rounded-full bg-[#F4A93A]/5 blur-3xl" />
-      <div className="pointer-events-none fixed right-0 bottom-0 h-96 w-96 rounded-full bg-[#8FA998]/5 blur-3xl" />
+
+      <div className="pointer-events-none fixed bottom-0 right-0 h-96 w-96 rounded-full bg-[#8FA998]/5 blur-3xl" />
 
       <div className="relative mx-auto max-w-7xl">
 
+        {/* Header */}
         <div className="mb-7 flex items-center gap-x-3">
           <h2 className="jn-display text-2xl font-medium text-[#FAF6EF] md:text-3xl">
             My Bids
           </h2>
 
           <span className="rounded-full border border-[#F4A93A]/30 bg-[#F4A93A]/10 px-3 py-1 text-xs font-semibold uppercase tracking-wider text-[#F4A93A]">
-            {bids.length} Bid{bids.length === 1 ? "" : "s"}
+            {bids.length} Bid
+            {bids.length === 1 ? "" : "s"}
           </span>
         </div>
 
         <motion.section
-          initial={{ opacity: 0, y: 25 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5 }}
+          initial={{
+            opacity: 0,
+            y: 25,
+          }}
+          animate={{
+            opacity: 1,
+            y: 0,
+          }}
+          transition={{
+            duration: 0.5,
+          }}
           className="relative overflow-hidden rounded-3xl border border-[#8FA998]/20 bg-[#0F2E22] shadow-[0_25px_60px_-25px_rgba(0,0,0,0.65)]"
         >
           <div className="pointer-events-none absolute -right-20 -top-20 h-60 w-60 rounded-full bg-[#F4A93A]/10 blur-3xl" />
 
           <div className="relative overflow-x-auto">
+
             <table className="min-w-full divide-y divide-[#8FA998]/10">
+
               <thead className="bg-[#092219]">
                 <tr>
                   <th className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider text-[#6B8577]">
                     Title
                   </th>
+
                   <th className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider text-[#6B8577]">
                     Deadline
                   </th>
+
                   <th className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider text-[#6B8577]">
                     Price
                   </th>
+
                   <th className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider text-[#6B8577]">
                     Category
                   </th>
+
                   <th className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider text-[#6B8577]">
                     Status
                   </th>
+
                   <th className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider text-[#6B8577]">
                     Actions
                   </th>
@@ -136,70 +196,119 @@ const MyBids = () => {
               </thead>
 
               <tbody className="divide-y divide-[#8FA998]/10">
+
                 {bids.map(bid => {
                   const status =
-                    statusStyles[bid.status] || defaultStatusStyle
+                    statusStyles[bid.status] ||
+                    defaultStatusStyle
 
                   const catStyle =
-                    categoryStyles[bid.category] || defaultCategoryStyle
+                    categoryStyles[bid.category] ||
+                    defaultCategoryStyle
+
+                  const canComplete =
+                    bid.status === "In Progress"
 
                   return (
                     <tr
                       key={bid._id}
                       className="transition-colors hover:bg-[#092219]/60"
                     >
+
+                      {/* Title */}
                       <td className="whitespace-nowrap px-6 py-4 text-sm font-medium text-[#FAF6EF]">
-                        {bid.job_title || "Untitled Job"}
+                        {bid.job_title ||
+                          "Untitled Job"}
                       </td>
 
+                      {/* Deadline */}
                       <td className="whitespace-nowrap px-6 py-4 text-sm text-[#9FB3A6]">
                         {bid.deadline
-                          ? new Date(bid.deadline).toLocaleDateString()
+                          ? new Date(
+                              bid.deadline
+                            ).toLocaleDateString(
+                              "en-GB",
+                              {
+                                day: "2-digit",
+                                month: "short",
+                                year: "numeric",
+                              }
+                            )
                           : "Not specified"}
                       </td>
 
-                      <td className="whitespace-nowrap px-6 py-4 text-sm text-[#F4A93A]">
+                      {/* Price */}
+                      <td className="whitespace-nowrap px-6 py-4 text-sm font-semibold text-[#F4A93A]">
                         ${bid.price}
                       </td>
 
+                      {/* Category */}
                       <td className="whitespace-nowrap px-6 py-4 text-sm">
                         <span
                           className={`rounded-full border px-3 py-1 text-xs font-semibold uppercase tracking-wider ${catStyle}`}
                         >
-                          {bid.category || "Uncategorized"}
+                          {bid.category ||
+                            "Uncategorized"}
                         </span>
                       </td>
 
+                      {/* Status */}
                       <td className="whitespace-nowrap px-6 py-4 text-sm">
                         <div
                           className={`inline-flex items-center gap-x-2 rounded-full border px-3 py-1 ${status.pill}`}
                         >
                           <span
                             className={`h-1.5 w-1.5 rounded-full ${status.dot}`}
-                          ></span>
+                          />
 
                           <span className="text-xs font-medium">
-                            {bid.status || "Pending"}
+                            {bid.status ||
+                              "Pending"}
                           </span>
                         </div>
                       </td>
 
+                      {/* Action */}
                       <td className="whitespace-nowrap px-6 py-4 text-sm">
-                        <button
-                          disabled={bid.status !== "In progress"}
-                          onClick={() =>
-                            handleStatus(bid._id, "Complete")
-                          }
-                          title="Mark Complete"
-                          className={`rounded-full border px-3 py-1.5 text-xs font-semibold uppercase tracking-wider transition ${
-                            bid.status !== "In progress"
-                              ? "cursor-not-allowed border-[#8FA998]/10 bg-[#8FA998]/5 text-[#6B8577]"
-                              : "border-emerald-400/30 bg-emerald-400/10 text-emerald-400 hover:bg-emerald-400/20"
-                          }`}
-                        >
-                          Complete
-                        </button>
+
+                        {bid.status ===
+                          "In Progress" && (
+                          <button
+                            disabled={isPending}
+                            onClick={() =>
+                              handleComplete(
+                                bid._id
+                              )
+                            }
+                            className="rounded-full border border-emerald-400/30 bg-emerald-400/10 px-3 py-1.5 text-xs font-semibold uppercase tracking-wider text-emerald-400 transition hover:bg-emerald-400/20 disabled:cursor-not-allowed disabled:opacity-50"
+                          >
+                            Complete
+                          </button>
+                        )}
+
+                        {bid.status ===
+                          "Pending" && (
+                          <span className="text-xs text-[#8FA998]">
+                            Waiting for approval
+                          </span>
+                        )}
+
+                        {bid.status ===
+                          "Complete" && (
+                          <span className="text-xs font-medium text-emerald-400">
+                            Completed
+                          </span>
+                        )}
+
+                        {bid.status ===
+                          "Rejected" && (
+                          <span className="text-xs font-medium text-red-400">
+                            Rejected
+                          </span>
+                        )}
+
                       </td>
+
                     </tr>
                   )
                 })}
@@ -210,14 +319,19 @@ const MyBids = () => {
                       colSpan={6}
                       className="px-6 py-10 text-center text-sm text-[#6B8577]"
                     >
-                      You haven't placed any bids yet.
+                      You haven't placed any bids
+                      yet.
                     </td>
                   </tr>
                 )}
+
               </tbody>
+
             </table>
+
           </div>
         </motion.section>
+
       </div>
     </main>
   )

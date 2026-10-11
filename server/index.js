@@ -1,13 +1,14 @@
-import express from 'express'
-import cors from 'cors'
-import jwt from 'jsonwebtoken'
-import cookieParser from 'cookie-parser'
-import dotenv from 'dotenv'
+import express from "express"
+import cors from "cors"
+import jwt from "jsonwebtoken"
+import cookieParser from "cookie-parser"
+import dotenv from "dotenv"
+
 import {
   MongoClient,
   ServerApiVersion,
   ObjectId,
-} from 'mongodb'
+} from "mongodb"
 
 dotenv.config()
 
@@ -15,15 +16,18 @@ const app = express()
 const port = process.env.PORT || 9000
 
 // =====================================
-// Middleware
+// CORS
 // =====================================
 
+const allowedOrigins = [
+  "http://localhost:5173",
+  "http://localhost:5174",
+  "https://fir-auth-48bf7.web.app",
+  process.env.CLIENT_URL,
+].filter(Boolean)
+
 const corsOptions = {
-  origin: [
-    'http://localhost:5173',
-    'http://localhost:5174',
-    'https://jobnest.web.app',
-  ],
+  origin: allowedOrigins,
   credentials: true,
   optionsSuccessStatus: 200,
 }
@@ -41,7 +45,7 @@ const verifyToken = (req, res, next) => {
 
   if (!token) {
     return res.status(401).send({
-      message: 'Unauthorized access',
+      message: "Unauthorized access",
     })
   }
 
@@ -50,17 +54,14 @@ const verifyToken = (req, res, next) => {
     process.env.ACCESS_TOKEN_SECRET,
     (err, decoded) => {
       if (err) {
-        console.log('JWT Error:', err)
+        console.log("JWT Error:", err)
 
         return res.status(401).send({
-          message: 'Unauthorized access',
+          message: "Unauthorized access",
         })
       }
 
-      console.log('Decoded JWT:', decoded)
-
       req.user = decoded
-
       next()
     }
   )
@@ -86,67 +87,82 @@ const client = new MongoClient(uri, {
 
 async function run() {
   try {
-    // Connect MongoDB
     await client.connect()
 
-    console.log('Connected to MongoDB!')
+    console.log("Connected to MongoDB!")
 
-    // Collections
     const jobsCollection = client
-  .db('jobnest')
-  .collection('jobs')
+      .db("jobnest")
+      .collection("jobs")
 
-const bidsCollection = client
-  .db('jobnest')
-  .collection('bids')
+    const bidsCollection = client
+      .db("jobnest")
+      .collection("bids")
+
     // =====================================
     // Generate JWT
     // =====================================
 
-    app.post('/jwt', async (req, res) => {
-      const user = req.body
+    app.post("/jwt", async (req, res) => {
+      try {
+        const user = req.body
 
-      const token = jwt.sign(
-        user,
-        process.env.ACCESS_TOKEN_SECRET,
-        {
-          expiresIn: '365d',
+        if (!user?.email) {
+          return res.status(400).send({
+            message: "Email is required",
+          })
         }
-      )
 
-      res
-        .cookie('token', token, {
-          httpOnly: true,
+        const token = jwt.sign(
+          {
+            email: user.email,
+          },
+          process.env.ACCESS_TOKEN_SECRET,
+          {
+            expiresIn: "365d",
+          }
+        )
 
-          secure:
-            process.env.NODE_ENV === 'production',
+        res
+          .cookie("token", token, {
+            httpOnly: true,
+            secure:
+              process.env.NODE_ENV ===
+              "production",
+            sameSite:
+              process.env.NODE_ENV ===
+              "production"
+                ? "none"
+                : "lax",
+          })
+          .send({
+            success: true,
+          })
+      } catch (error) {
+        console.log(error)
 
-          sameSite:
-            process.env.NODE_ENV === 'production'
-              ? 'none'
-              : 'lax',
+        res.status(500).send({
+          message: "Failed to generate token",
         })
-        .send({
-          success: true,
-        })
+      }
     })
 
     // =====================================
     // Logout
     // =====================================
 
-    app.get('/logout', (req, res) => {
+    app.get("/logout", (req, res) => {
       res
-        .clearCookie('token', {
+        .clearCookie("token", {
           httpOnly: true,
-
           secure:
-            process.env.NODE_ENV === 'production',
-
+            process.env.NODE_ENV ===
+            "production",
           sameSite:
-            process.env.NODE_ENV === 'production'
-              ? 'none'
-              : 'lax',
+            process.env.NODE_ENV ===
+            "production"
+              ? "none"
+              : "lax",
         })
         .send({
           success: true,
@@ -157,18 +173,19 @@ const bidsCollection = client
     // Get All Jobs
     // =====================================
 
-    app.get('/jobs', async (req, res) => {
+    app.get("/jobs", async (req, res) => {
       try {
-        const result = await jobsCollection
-          .find()
-          .toArray()
+        const result =
+          await jobsCollection
+            .find()
+            .toArray()
 
         res.send(result)
       } catch (error) {
         console.log(error)
 
         res.status(500).send({
-          message: 'Failed to get jobs',
+          message: "Failed to get jobs",
         })
       }
     })
@@ -177,7 +194,7 @@ const bidsCollection = client
     // Get Jobs For Pagination
     // =====================================
 
-    app.get('/all-jobs', async (req, res) => {
+    app.get("/all-jobs", async (req, res) => {
       try {
         const size =
           parseInt(req.query.size) || 6
@@ -186,42 +203,41 @@ const bidsCollection = client
           parseInt(req.query.page) || 1
 
         const filter =
-          req.query.filter || ''
+          req.query.filter || ""
 
         const sort =
-          req.query.sort || ''
+          req.query.sort || ""
 
         const search =
-          req.query.search || ''
+          req.query.search || ""
 
-        // Search query
         const query = {
           job_title: {
             $regex: search,
-            $options: 'i',
+            $options: "i",
           },
         }
 
-        // Category filter
         if (filter) {
           query.category = filter
         }
 
-        // Sort
         const sortOptions = {}
 
-        if (sort === 'asc') {
+        if (sort === "asc") {
           sortOptions.deadline = 1
         }
 
-        if (sort === 'desc') {
+        if (sort === "desc") {
           sortOptions.deadline = -1
         }
 
-        let cursor = jobsCollection.find(query)
+        let cursor =
+          jobsCollection.find(query)
 
         if (sort) {
-          cursor = cursor.sort(sortOptions)
+          cursor =
+            cursor.sort(sortOptions)
         }
 
         const result = await cursor
@@ -234,7 +250,7 @@ const bidsCollection = client
         console.log(error)
 
         res.status(500).send({
-          message: 'Failed to load jobs',
+          message: "Failed to load jobs",
         })
       }
     })
@@ -243,92 +259,129 @@ const bidsCollection = client
     // Get Jobs Count
     // =====================================
 
-    app.get('/jobs-count', async (req, res) => {
-      try {
-        const filter =
-          req.query.filter || ''
+    app.get(
+      "/jobs-count",
+      async (req, res) => {
+        try {
+          const filter =
+            req.query.filter || ""
 
-        const search =
-          req.query.search || ''
+          const search =
+            req.query.search || ""
 
-        const query = {
-          job_title: {
-            $regex: search,
-            $options: 'i',
-          },
+          const query = {
+            job_title: {
+              $regex: search,
+              $options: "i",
+            },
+          }
+
+          if (filter) {
+            query.category = filter
+          }
+
+          const count =
+            await jobsCollection.countDocuments(
+              query
+            )
+
+          res.send({
+            count,
+          })
+        } catch (error) {
+          console.log(error)
+
+          res.status(500).send({
+            message:
+              "Failed to count jobs",
+          })
         }
-
-        if (filter) {
-          query.category = filter
-        }
-
-        const count =
-          await jobsCollection.countDocuments(
-            query
-          )
-
-        res.send({
-          count,
-        })
-      } catch (error) {
-        console.log(error)
-
-        res.status(500).send({
-          message: 'Failed to count jobs',
-        })
       }
-    })
+    )
 
     // =====================================
     // Get Single Job
     // =====================================
 
-    app.get('/job/:id', async (req, res) => {
-      try {
-        const id = req.params.id
+    app.get(
+      "/job/:id",
+      async (req, res) => {
+        try {
+          const id = req.params.id
 
-        if (!ObjectId.isValid(id)) {
-          return res.status(400).send({
-            message: 'Invalid job ID',
+          if (!ObjectId.isValid(id)) {
+            return res
+              .status(400)
+              .send({
+                message:
+                  "Invalid job ID",
+              })
+          }
+
+          const query = {
+            _id: new ObjectId(id),
+          }
+
+          const result =
+            await jobsCollection.findOne(
+              query
+            )
+
+          if (!result) {
+            return res
+              .status(404)
+              .send({
+                message:
+                  "Job not found",
+              })
+          }
+
+          res.send(result)
+        } catch (error) {
+          console.log(error)
+
+          res.status(500).send({
+            message:
+              "Failed to get job",
           })
         }
-
-        const query = {
-          _id: new ObjectId(id),
-        }
-
-        const result =
-          await jobsCollection.findOne(query)
-
-        res.send(result)
-      } catch (error) {
-        console.log(error)
-
-        res.status(500).send({
-          message: 'Failed to get job',
-        })
       }
-    })
+    )
 
     // =====================================
     // Save Job
     // =====================================
 
     app.post(
-      '/job',
+      "/job",
       verifyToken,
       async (req, res) => {
         try {
           const jobData = req.body
 
-          console.log(
-            'Job Data:',
-            jobData
-          )
+          // Prevent user from posting
+          // a job using another email
+          if (
+            req.user.email !==
+            jobData?.buyer?.email
+          ) {
+            return res
+              .status(403)
+              .send({
+                message:
+                  "Forbidden access",
+              })
+          }
+
+          const newJob = {
+            ...jobData,
+            bid_count:
+              jobData.bid_count || 0,
+          }
 
           const result =
             await jobsCollection.insertOne(
-              jobData
+              newJob
             )
 
           res.send(result)
@@ -336,7 +389,8 @@ const bidsCollection = client
           console.log(error)
 
           res.status(500).send({
-            message: 'Failed to create job',
+            message:
+              "Failed to create job",
           })
         }
       }
@@ -347,7 +401,7 @@ const bidsCollection = client
     // =====================================
 
     app.get(
-      '/jobs/:email',
+      "/jobs/:email",
       verifyToken,
       async (req, res) => {
         try {
@@ -357,28 +411,17 @@ const bidsCollection = client
           const email =
             req.params.email
 
-          console.log(
-            'Token Email:',
-            tokenEmail
-          )
-
-          console.log(
-            'Requested Email:',
-            email
-          )
-
-          // Security check
           if (tokenEmail !== email) {
             return res
               .status(403)
               .send({
                 message:
-                  'Forbidden access',
+                  "Forbidden access",
               })
           }
 
           const query = {
-            'buyer.email': email,
+            "buyer.email": email,
           }
 
           const result =
@@ -392,7 +435,7 @@ const bidsCollection = client
 
           res.status(500).send({
             message:
-              'Failed to get posted jobs',
+              "Failed to get posted jobs",
           })
         }
       }
@@ -403,7 +446,7 @@ const bidsCollection = client
     // =====================================
 
     app.delete(
-      '/job/:id',
+      "/job/:id",
       verifyToken,
       async (req, res) => {
         try {
@@ -414,17 +457,41 @@ const bidsCollection = client
               .status(400)
               .send({
                 message:
-                  'Invalid job ID',
+                  "Invalid job ID",
               })
           }
 
-          const query = {
-            _id: new ObjectId(id),
+          const job =
+            await jobsCollection.findOne({
+              _id: new ObjectId(id),
+            })
+
+          if (!job) {
+            return res
+              .status(404)
+              .send({
+                message:
+                  "Job not found",
+              })
+          }
+
+          if (
+            job?.buyer?.email !==
+            req.user.email
+          ) {
+            return res
+              .status(403)
+              .send({
+                message:
+                  "You can only delete your own job",
+              })
           }
 
           const result =
             await jobsCollection.deleteOne(
-              query
+              {
+                _id: new ObjectId(id),
+              }
             )
 
           res.send(result)
@@ -432,7 +499,8 @@ const bidsCollection = client
           console.log(error)
 
           res.status(500).send({
-            message: 'Failed to delete job',
+            message:
+              "Failed to delete job",
           })
         }
       }
@@ -443,7 +511,7 @@ const bidsCollection = client
     // =====================================
 
     app.put(
-      '/job/:id',
+      "/job/:id",
       verifyToken,
       async (req, res) => {
         try {
@@ -455,13 +523,39 @@ const bidsCollection = client
               .status(400)
               .send({
                 message:
-                  'Invalid job ID',
+                  "Invalid job ID",
               })
           }
 
-          const query = {
-            _id: new ObjectId(id),
+          const job =
+            await jobsCollection.findOne({
+              _id: new ObjectId(id),
+            })
+
+          if (!job) {
+            return res
+              .status(404)
+              .send({
+                message:
+                  "Job not found",
+              })
           }
+
+          if (
+            job?.buyer?.email !==
+            req.user.email
+          ) {
+            return res
+              .status(403)
+              .send({
+                message:
+                  "You can only update your own job",
+              })
+          }
+
+          // Do not allow changing owner
+          delete jobData._id
+          delete jobData.buyer
 
           const updateDoc = {
             $set: {
@@ -471,7 +565,9 @@ const bidsCollection = client
 
           const result =
             await jobsCollection.updateOne(
-              query,
+              {
+                _id: new ObjectId(id),
+              },
               updateDoc
             )
 
@@ -480,7 +576,8 @@ const bidsCollection = client
           console.log(error)
 
           res.status(500).send({
-            message: 'Failed to update job',
+            message:
+              "Failed to update job",
           })
         }
       }
@@ -491,30 +588,77 @@ const bidsCollection = client
     // =====================================
 
     app.post(
-      '/bid',
+      "/bid",
       verifyToken,
       async (req, res) => {
         try {
-          const bidData = req.body
+          const incomingBid =
+            req.body
 
-          // Prevent user from bidding
-          // using another email
+          // User cannot submit using
+          // another user's email
           if (
             req.user.email !==
-            bidData.email
+            incomingBid.email
           ) {
             return res
               .status(403)
               .send({
                 message:
-                  'Forbidden access',
+                  "Forbidden access",
               })
           }
 
-          // Check duplicate bid
+          if (
+            !incomingBid.jobId ||
+            !ObjectId.isValid(
+              incomingBid.jobId
+            )
+          ) {
+            return res
+              .status(400)
+              .send({
+                message:
+                  "Invalid job ID",
+              })
+          }
+
+          const job =
+            await jobsCollection.findOne({
+              _id: new ObjectId(
+                incomingBid.jobId
+              ),
+            })
+
+          if (!job) {
+            return res
+              .status(404)
+              .send({
+                message:
+                  "Job not found",
+              })
+          }
+
+          // User cannot bid on
+          // their own job
+          if (
+            job?.buyer?.email ===
+            req.user.email
+          ) {
+            return res
+              .status(400)
+              .send({
+                message:
+                  "You cannot bid on your own job",
+              })
+          }
+
+          // Duplicate bid check
           const query = {
-            email: bidData.email,
-            jobId: bidData.jobId,
+            email:
+              incomingBid.email,
+            jobId:
+              incomingBid.jobId,
           }
 
           const alreadyApplied =
@@ -527,42 +671,46 @@ const bidsCollection = client
               .status(400)
               .send({
                 message:
-                  'You have already placed a bid on this job.',
+                  "You have already placed a bid on this job.",
               })
           }
 
-          // Insert bid
+          // Always create bid as Pending
+          const bidData = {
+            ...incomingBid,
+
+            buyer_email:
+              job.buyer.email,
+
+            status: "Pending",
+          }
+
           const result =
             await bidsCollection.insertOne(
               bidData
             )
 
           // Increase job bid count
-          if (
-            ObjectId.isValid(
-              bidData.jobId
-            )
-          ) {
-            await jobsCollection.updateOne(
-              {
-                _id: new ObjectId(
-                  bidData.jobId
-                ),
+          await jobsCollection.updateOne(
+            {
+              _id: new ObjectId(
+                incomingBid.jobId
+              ),
+            },
+            {
+              $inc: {
+                bid_count: 1,
               },
-              {
-                $inc: {
-                  bid_count: 1,
-                },
-              }
-            )
-          }
+            }
+          )
 
           res.send(result)
         } catch (error) {
           console.log(error)
 
           res.status(500).send({
-            message: 'Failed to create bid',
+            message:
+              "Failed to create bid",
           })
         }
       }
@@ -573,7 +721,7 @@ const bidsCollection = client
     // =====================================
 
     app.get(
-      '/my-bids/:email',
+      "/my-bids/:email",
       verifyToken,
       async (req, res) => {
         try {
@@ -583,13 +731,12 @@ const bidsCollection = client
           const email =
             req.params.email
 
-          // Security check
           if (tokenEmail !== email) {
             return res
               .status(403)
               .send({
                 message:
-                  'Forbidden access',
+                  "Forbidden access",
               })
           }
 
@@ -607,7 +754,8 @@ const bidsCollection = client
           console.log(error)
 
           res.status(500).send({
-            message: 'Failed to get bids',
+            message:
+              "Failed to get bids",
           })
         }
       }
@@ -618,7 +766,7 @@ const bidsCollection = client
     // =====================================
 
     app.get(
-      '/bid-requests/:email',
+      "/bid-requests/:email",
       verifyToken,
       async (req, res) => {
         try {
@@ -628,39 +776,14 @@ const bidsCollection = client
           const email =
             req.params.email
 
-          // Security check
           if (tokenEmail !== email) {
             return res
               .status(403)
               .send({
                 message:
-                  'Forbidden access',
+                  "Forbidden access",
               })
           }
-
-          /*
-            IMPORTANT:
-
-            If your bid object looks like:
-
-            {
-              buyer_email: "abc@gmail.com"
-            }
-
-            use:
-              { buyer_email: email }
-
-            If your bid object looks like:
-
-            {
-              buyer: {
-                email: "abc@gmail.com"
-              }
-            }
-
-            use:
-              { "buyer.email": email }
-          */
 
           const query = {
             buyer_email: email,
@@ -677,7 +800,7 @@ const bidsCollection = client
 
           res.status(500).send({
             message:
-              'Failed to get bid requests',
+              "Failed to get bid requests",
           })
         }
       }
@@ -688,34 +811,133 @@ const bidsCollection = client
     // =====================================
 
     app.patch(
-      '/bid/:id',
+      "/bid/:id",
       verifyToken,
       async (req, res) => {
         try {
           const id = req.params.id
-          const status = req.body
+          const { status } =
+            req.body
+
+          const userEmail =
+            req.user.email
 
           if (!ObjectId.isValid(id)) {
             return res
               .status(400)
               .send({
                 message:
-                  'Invalid bid ID',
+                  "Invalid bid ID",
               })
           }
 
-          const query = {
-            _id: new ObjectId(id),
+          const allowedStatuses = [
+            "In Progress",
+            "Complete",
+            "Rejected",
+          ]
+
+          if (
+            !allowedStatuses.includes(
+              status
+            )
+          ) {
+            return res
+              .status(400)
+              .send({
+                message:
+                  "Invalid bid status",
+              })
           }
 
-          const updateDoc = {
-            $set: status,
+          const bid =
+            await bidsCollection.findOne({
+              _id: new ObjectId(id),
+            })
+
+          if (!bid) {
+            return res
+              .status(404)
+              .send({
+                message:
+                  "Bid not found",
+              })
+          }
+
+          // =====================================
+          // Job owner can Accept / Reject
+          // =====================================
+
+          if (
+            status ===
+              "In Progress" ||
+            status === "Rejected"
+          ) {
+            if (
+              bid.buyer_email !==
+              userEmail
+            ) {
+              return res
+                .status(403)
+                .send({
+                  message:
+                    "Only the job owner can accept or reject this bid",
+                })
+            }
+
+            if (
+              bid.status !== "Pending"
+            ) {
+              return res
+                .status(400)
+                .send({
+                  message:
+                    "Only pending bids can be accepted or rejected",
+                })
+            }
+          }
+
+          // =====================================
+          // Bidder can mark work Complete
+          // =====================================
+
+          if (
+            status === "Complete"
+          ) {
+            if (
+              bid.email !== userEmail
+            ) {
+              return res
+                .status(403)
+                .send({
+                  message:
+                    "Only the bidder can mark this work as complete",
+                })
+            }
+
+            if (
+              bid.status !==
+              "In Progress"
+            ) {
+              return res
+                .status(400)
+                .send({
+                  message:
+                    "Only an in-progress bid can be completed",
+                })
+            }
           }
 
           const result =
             await bidsCollection.updateOne(
-              query,
-              updateDoc
+              {
+                _id: new ObjectId(id),
+              },
+              {
+                $set: {
+                  status,
+                },
+              }
             )
 
           res.send(result)
@@ -724,7 +946,7 @@ const bidsCollection = client
 
           res.status(500).send({
             message:
-              'Failed to update bid status',
+              "Failed to update bid status",
           })
         }
       }
@@ -735,17 +957,17 @@ const bidsCollection = client
     // =====================================
 
     await client
-      .db('admin')
+      .db("admin")
       .command({
         ping: 1,
       })
 
     console.log(
-      'Pinged your deployment. You successfully connected to MongoDB!'
+      "Pinged your deployment. MongoDB connected successfully!"
     )
   } catch (error) {
     console.error(
-      'MongoDB connection error:',
+      "MongoDB connection error:",
       error
     )
   }
@@ -757,9 +979,9 @@ run().catch(console.dir)
 // Home Route
 // =====================================
 
-app.get('/', (req, res) => {
+app.get("/", (req, res) => {
   res.send(
-    'Hello from JobNest Server....'
+    "Hello from JobNest Server...."
   )
 })
 
