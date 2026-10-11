@@ -230,7 +230,7 @@ const TabCategories = () => {
           <div className="mt-10 flex justify-center">
 
             <Link
-              to="/all-jobs"
+              to="/jobs"
               className="
                 group
                 inline-flex
