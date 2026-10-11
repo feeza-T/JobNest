@@ -44,7 +44,7 @@ const navLinks = [
           className="flex items-center gap-2 transition-opacity duration-200 hover:opacity-80"
         >
           <img className="h-7 w-auto" src={logo} alt="SoloSphere" />
-          <span className="font-bold text-[#FAF6EF]">SoloSphere</span>
+          <span className="font-bold text-[#FAF6EF]">JobNest</span>
         </Link>
 
         {/* Desktop nav links */}
